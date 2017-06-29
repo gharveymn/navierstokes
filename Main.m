@@ -35,8 +35,8 @@ function [figs,mat,vec] = run(par,figs)
 	
 	[grids,filtering,par] = ParseValidIndices(par);
 	
-	nx = numel(grids{1});
-	ny = numel(grids{2});
+	nxp1 = numel(grids{1});
+	nyp1 = numel(grids{2});
 	
 	%implement external force function (on rhs)
 	rhs = rhfunc(grids{3},grids{4});
@@ -72,16 +72,16 @@ function [figs,mat,vec] = run(par,figs)
 		end
 	else
 		
-		[umesh,vmesh,pmesh] = solver(nx,ny,bc,rhs,filterMat,h);
+		[umesh,vmesh,pmesh] = solver(nxp1,nyp1,bc,rhs,filterMat,h);
 		
 		umeshfull = filterMat'*umesh;
-		Umesh = reshape(umeshfull,[nx,ny])';
+		Umesh = reshape(umeshfull,[nxp1,nyp1])';
 		
 		vmeshfull = filterMat'*vmesh;
-		Vmesh = reshape(vmeshfull,[nx,ny])';
+		Vmesh = reshape(vmeshfull,[nxp1,nyp1])';
 		
 		psimeshfull = filterMat'*pmesh;
-		Pmesh = reshape(psimeshfull,[nx,ny])';
+		Pmesh = reshape(psimeshfull,[nxp1,nyp1])';
 		
 		if(par.filter)
 			on = filtering{3}{1};

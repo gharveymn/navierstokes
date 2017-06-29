@@ -3,7 +3,7 @@ function par = Parameters
 	%
 	% Definite parameters go here
 	
-	addpath('ddsolvers');
+	addpath('nssolvers');
 	addpath('solvers');
 	addpath('bcfunctions');
 	addpath('rhfunctions');
@@ -13,7 +13,6 @@ function par = Parameters
 	par.maptype = 'g';
 	par.mapfile = 'symch.txt';
 	par.h = 0.05;
-	par.ghostpoints = true;
 	par.streamfunction = true;
 	par.order = 3;
 	

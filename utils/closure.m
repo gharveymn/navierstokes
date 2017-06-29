@@ -1,4 +1,4 @@
-function [clomeshfull,gridsnew,filteringnew,ret] = closure(grids,filtering,side,gp,vect)
+function [clomeshfull,gridsnew,filteringnew,ret] = closure(grids,filtering,side,gp,vect,leaveCornersAlone)
 	%CLOSURE surrounds the input grid with a closure
 	% expects vector containing x coordinates and vector containing y coordinates of form
 	% 11,21,31,41,12,22,32,42,etc.
@@ -19,8 +19,6 @@ function [clomeshfull,gridsnew,filteringnew,ret] = closure(grids,filtering,side,
 	%	filteringnew	filtering matrices
 	%	ret			vect adjusted to the new domain
 	%
-	% none of this is true, this is a HACK
-	% THIS SHOULDNT EVEN WORKKKK
 	
 	%TODO: specify the boundary with gp, cut down required arguments to h and gp
 	%		then use a varargin for mesh, meshfull, CAPSmesh etc.
@@ -134,10 +132,12 @@ function [clomeshfull,gridsnew,filteringnew,ret] = closure(grids,filtering,side,
 		
 		Clomeshfull = Clomeshfull | circshift(Bcw,-1,2) | circshift(Bce,1,2) | circshift(Bcs,-1) | circshift(Bcn,1);
 		
-		Clomeshfull = Clomeshfull | circshift(circshift(Bcc,1),1,2)...
-			| circshift(circshift(Bcc,1),-1,2)...
-			| circshift(circshift(Bcc,-1),1,2)...
-			| circshift(circshift(Bcc,-1),-1,2);
+		if(~exist('leaveCornersAlone','var') || ~leaveCornersAlone)
+			Clomeshfull = Clomeshfull | circshift(circshift(Bcc,1),1,2)...
+				| circshift(circshift(Bcc,1),-1,2)...
+				| circshift(circshift(Bcc,-1),1,2)...
+				| circshift(circshift(Bcc,-1),-1,2);
+		end
 		
 		%& ~Valindnew wipes out shifted indices which are inside the polgon
 		Clomeshfull = Clomeshfull & ~Valindouternew;
@@ -286,10 +286,12 @@ function [clomeshfull,gridsnew,filteringnew,ret] = closure(grids,filtering,side,
 		
 		Clomeshfull = Clomeshfull | circshift(Bcw,1,2) | circshift(Bce,-1,2) | circshift(Bcs,1) | circshift(Bcn,-1);
 		
-		Clomeshfull = Clomeshfull | circshift(circshift(Bcc,1),1,2)...
-			| circshift(circshift(Bcc,1),-1,2)...
-			| circshift(circshift(Bcc,-1),1,2)...
-			| circshift(circshift(Bcc,-1),-1,2);
+		if(~exist('leaveCornersAlone','var') || ~leaveCornersAlone)
+			Clomeshfull = Clomeshfull | circshift(circshift(Bcc,1),1,2)...
+				| circshift(circshift(Bcc,1),-1,2)...
+				| circshift(circshift(Bcc,-1),1,2)...
+				| circshift(circshift(Bcc,-1),-1,2);
+		end
 		
 		Valindinnernew = Valindinnernew & ~Gpmatinds;
 		Valindouternew = Valindouternew & ~Gpmatinds;
