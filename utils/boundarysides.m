@@ -5,17 +5,17 @@ function [dbc,dbcfull] = boundarysides(grids,filtering,gp,side)
 		side = 'inner';
 	end
 	
-	xmeshfull = grids{7};
-	ymeshfull = grids{8};
+	xmeshfull = grids.xmeshfull;
+	ymeshfull = grids.ymeshfull;
 	
 	if(strcmp(side,'outer'))
 		onfull = gp;
 	else
-		onfull = filtering{3}{2};
+		onfull = filtering.onfull;
 	end
-	valindinner = filtering{2}{1};
-	valindouter = filtering{2}{2};
-	nx = grids{9};
+	valindinner = filtering.valindinner;
+	valindouter = filtering.valindouter;
+	nx = grids.nx;
 	
 	xmin = min(xmeshfull);
 	xmax = max(xmeshfull);

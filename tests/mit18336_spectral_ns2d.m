@@ -6,9 +6,9 @@ function mit18336_spectral_ns2d
 %  jcnave (at) mit (dot) edu                                                    %
 %                                                                               %
 %  Dw/Dt = nu.Laplacian(w)                                                      % 
-%  Laplacian(psi) = -w                                                          %
-%  u = psi_y                                                                    %
-%  v =-psi_x                                                                    %
+%  Laplacian(q) = -w                                                          %
+%  u = q_y                                                                    %
+%  v =-q_x                                                                    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clear all;
 
@@ -64,9 +64,9 @@ k=0;
 while t<TF
     k=k+1;
     % Compute the stream function and get the velocity and gradient of vorticity
-    psi_hat = -w_hat./ksquare_poisson;  % Solve Poisson's Equation
-    u  =real(ifft2( ky.*psi_hat));      % Compute  y derivative of stream function ==> u
-    v  =real(ifft2(-kx.*psi_hat));      % Compute -x derivative of stream function ==> v
+    q_hat = -w_hat./ksquare_poisson;  % Solve Poisson's Equation
+    u  =real(ifft2( ky.*q_hat));      % Compute  y derivative of stream function ==> u
+    v  =real(ifft2(-kx.*q_hat));      % Compute -x derivative of stream function ==> v
     w_x=real(ifft2( kx.*w_hat  ));      % Compute  x derivative of vorticity
     w_y=real(ifft2( ky.*w_hat  ));      % Compute  y derivative of vorticity
     

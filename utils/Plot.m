@@ -14,13 +14,13 @@ function figs = InitialPlot(mat,vec,par)
 	Y = mat(:,:,2);
 	U = mat(:,:,3);
 	V = mat(:,:,4);
-	Psi = mat(:,:,5);
+	Q = mat(:,:,5);
 	
 	x = vec(:,1);
 	y = vec(:,2);
 	u = vec(:,3);
 	v = vec(:,4);
-	psi = vec(:,5);
+	q = vec(:,5);
 	
 	ax = MakeAxis(x,y);
 	
@@ -38,8 +38,8 @@ function figs = InitialPlot(mat,vec,par)
 		title('$v$','interpreter','latex','FontSize',20)
 		
 		figure(3)
-		f3 = surf(X,Y,Psi,'edgecolor','none','facecolor','interp');
-		%f3 = contour(X,Y,Psi);
+		f3 = surf(X,Y,Q,'edgecolor','none','facecolor','interp');
+		%f3 = contour(X,Y,Q);
 		axis(ax)
 		title('$\psi$','interpreter','latex','FontSize',20)
 		
@@ -56,8 +56,8 @@ function figs = InitialPlot(mat,vec,par)
 
 		figure(2)
 		ax = MakeAxis(X,Y);
-		clrs = abs(psi)./max(abs(psi(isfinite(psi))));
-		f2 = scatter3(x,y,psi,10,[clrs zeros(numel(clrs),1) 1-clrs], '.');
+		clrs = abs(q)./max(abs(q(isfinite(q))));
+		f2 = scatter3(x,y,q,10,[clrs zeros(numel(clrs),1) 1-clrs], '.');
 		axis(ax)
 		title('$\psi$','interpreter','latex','FontSize',20)
 		
@@ -79,8 +79,8 @@ function figs = InitialPlot(mat,vec,par)
 		title('$v$','interpreter','latex','FontSize',20)
 
 		figure(3)
-		clrs = MakeClrs(psi);
-		f3 = scatter3(x,y,psi,10,clrs,'.');
+		clrs = MakeClrs(q);
+		f3 = scatter3(x,y,q,10,clrs,'.');
 		axis(ax)
 		title('$\psi$','interpreter','latex','FontSize',20)
 		
@@ -102,7 +102,7 @@ function figs = InitialPlot(mat,vec,par)
 		title('$v$','interpreter','latex','FontSize',20)
 		
 		figure(3)
-		[C3,h3] = contour(X,Y,Psi,par.conlines);
+		[C3,h3] = contour(X,Y,Q,par.conlines);
 		f3 = {C3,h3};
 		axis(ax)
 		title('$\psi$','interpreter','latex','FontSize',20)
@@ -122,25 +122,25 @@ function figs = Update(mat,vec,par,figs)
 	try
 		U = mat(:,:,3);
 		V = mat(:,:,4);
-		Psi = mat(:,:,5);
+		Q = mat(:,:,5);
 
 		u = vec(:,3);
 		v = vec(:,4);
-		psi = vec(:,5);
+		q = vec(:,5);
 
 		if(par.toPlot == 1)
 
 			set(figs{1},'ZData',U);
 			set(figs{2},'ZData',V);
-			set(figs{3},'ZData',Psi);
+			set(figs{3},'ZData',Q);
 
 		elseif(par.toPlot == 2)
 
 			set(figs{1},'UData',u);
 			set(figs{1},'VData',v);
 
-			clrs = MakeClrs(psi);
-			set(figs{2},'ZData',psi);
+			clrs = MakeClrs(q);
+			set(figs{2},'ZData',q);
 			set(figs{2},'CData',clrs);
 
 		elseif(par.toPlot == 3)
@@ -153,19 +153,19 @@ function figs = Update(mat,vec,par,figs)
 			set(figs{2},'ZData',v);
 			set(figs{2},'CData',clrs);
 
-			clrs = MakeClrs(psi);
-			set(figs{3},'ZData',psi);
+			clrs = MakeClrs(q);
+			set(figs{3},'ZData',q);
 			set(figs{3},'CData',clrs);
 			
 		elseif(par.toPlot == 4)
-			disp('Couldn''t update one of the figures—we''ll try to make new ones')
+			disp('Couldn''t update one of the figures; we''ll try to make new ones')
 			figs = InitialPlot(mat,vec,par);
 		end
 
 		drawnow;
 		
 	catch ME
-		disp('Couldn''t update one of the figures—we''ll try to make new ones')
+		disp('Couldn''t update one of the figures; we''ll try to make new ones')
 		figs = InitialPlot(mat,vec,par);
 	end
 	

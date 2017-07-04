@@ -1,16 +1,16 @@
 function [rhs,bcinds] = BCSymCh(grids,filtering,rhs,par)
 	
-	xmeshfull = grids{7};
-	ymeshfull = grids{8};
-	xmesh = grids{3};
-	ymesh = grids{4};
-	nx = grids{9};
-	valindinner = filtering{2}{1};
-	valindouter = filtering{2}{2};
+	xmeshfull = grids.xmeshfull;
+	ymeshfull = grids.ymeshfull;
+	xmesh = grids.xmesh;
+	ymesh = grids.ymesh;
+	nx = grids.nx;
+	valindinner = filtering.valindinner;
+	valindouter = filtering.valindouter;
 	
-	on = filtering{3}{1};
-	bcfull = filtering{4}{2};
-	gpca = filtering{5};
+	on = filtering.on;
+	bcfull = filtering.dbcfull;
+	gpca = filtering.gp;
 	
 	del = par.h;
 	

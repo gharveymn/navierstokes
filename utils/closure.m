@@ -24,15 +24,15 @@ function [clomeshfull,gridsnew,filteringnew,ret] = closure(grids,filtering,side,
 	%		then use a varargin for mesh, meshfull, CAPSmesh etc.
 	%		That should generalize the program for other use
 	
-	xmeshfull = grids{7};
-	ymeshfull = grids{8};
-	nx = grids{9};
-	ny = grids{10};
-	h = grids{11};
+	xmeshfull = grids.xmeshfull;
+	ymeshfull = grids.ymeshfull;
+	nx = grids.nx;
+	ny = grids.ny;
+	h = grids.h;
 	
-	valindinner = filtering{2}{1};
-	valindouter = filtering{2}{2};
-	onfull = filtering{3}{2};
+	valindinner = filtering.valindinner;
+	valindouter = filtering.valindouter;
+	onfull = filtering.onfull;
 	
 	if(~exist('side','var') || isempty(side))
 		side = 'outer';
@@ -348,10 +348,29 @@ function [clomeshfull,gridsnew,filteringnew,ret] = closure(grids,filtering,side,
 		throw(ME)
 	end
 	
-	gridsnew = {xinitnew,yinitnew,xmeshnew,ymeshnew,Xmeshnew,Ymeshnew,xmeshfullnew,ymeshfullnew,nxnew,nynew,h};		
-	filteringnew = {filterMatnew,{valindinnernew,valindouternew},{onnew,onfullnew},{dbc,dbcfull}};
+	gridsnew.xinit = xinitnew;
+	gridsnew.yinit = yinitnew;
+	gridsnew.xmesh = xmeshnew;
+	gridsnew.ymesh = ymeshnew;
+	gridsnew.Xmesh = Xmeshnew;
+	gridsnew.Ymesh = Ymeshnew;
+	gridsnew.xmeshfull = xmeshfullnew;
+	gridsnew.ymeshfull = ymeshfullnew;
+	gridsnew.nx = nxnew;
+	gridsnew.ny = nynew;
+	gridsnew.h = h;
+	
+	filteringnew.filterMat = filterMatnew;
+	filteringnew.valindinner = valindinnernew;
+	filteringnew.valindouter = valindouternew;
+	filteringnew.on = onnew;
+	filteringnew.onfull = onfullnew;
+	filteringnew.dbc = dbc;
+	filteringnew.dbcfull = dbcfull;
+	
 	[dbc,dbcfull] = boundarysides(gridsnew,filteringnew);
-	filteringnew{4} = {dbc,dbcfull};
+	filteringnew.dbc = dbc;
+	filteringnew.dbcfull = dbcfull;
 	
 	
 	

@@ -1,15 +1,15 @@
-function psimesh = NSFixY(grids,filtering,rhs,bc,par,solver)
+function qmesh = NSFixY(grids,filtering,rhs,bc,par,solver)
 	
-	yinit = grids{2};
-	xmesh = grids{3};
-	ymesh = grids{4};
+	yinit = grids.yinit;
+	xmesh = grids.xmesh;
+	ymesh = grids.ymesh;
 	
 	%for now we will just boost efficiency by keeping two types of derivative matrices
 
-	nx = grids{9};
-	ny = grids{10};
-	h = grids{11};
-	filterMat = filtering{1};
+	nx = grids.nx;
+	ny = grids.ny;
+	h = grids.h;
+	filterMat = filtering.filterMat;
 
 	%make derivative matrices
 	bih = biharmonic2(nx,ny,h,bc{1}{2}{1},bc{1}{2}{2});

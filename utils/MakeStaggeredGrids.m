@@ -1,5 +1,5 @@
-function [grids,filtering,par] = ParseValidIndices(par)
-	%PARSEVALIDINDICES parses the map file and gives us our mesh
+function [grids,filtering,par] = MakeStaggeredGrids(par)
+	%MakeGrids parses the map file and gives us our mesh
 	%xinit,yinit are unmatched x and y sets -- vector
 	%xmesh,ymesh have invalid indices removed -- vector
 	%Xmesh,Ymesh have NaN wherever invalid -- matrix
@@ -163,13 +163,30 @@ function [grids,filtering] = createGrids(xinit,yinit,nx,ny,xlimcoords,ylimcoords
 	xmesh = filterMat*xmeshfull;
 	ymesh = filterMat*ymeshfull;
 	
-	grids = {xinit,yinit,xmesh,ymesh,Xmesh,Ymesh,xmeshfull,ymeshfull,nx,ny,h};
+	grids.xinit = xinit;
+	grids.yinit = yinit;
+	grids.xmesh = xmesh;
+	grids.ymesh = ymesh;
+	grids.Xmesh = Xmesh;
+	grids.Ymesh = Ymesh;
+	grids.xmeshfull = xmeshfull;
+	grids.ymeshfull = ymeshfull;
+	grids.nx = nx;
+	grids.ny = ny;
+	grids.h = par.h;
 	
-		
-	%filterMat,{valindinner,valindouter},{on,onfull},{dbc,dbcfull},{gp1,gp2}
-	filtering = {filterMat,{valind,valind},{on,onfull},{on,onfull},{onfull,[]}};
+	filtering.filterMat= filterMat;
+	filtering.valindinner = valind;
+	filtering.valindouter = valind;
+	filtering.on = on;
+	filtering.onfull = onfull;
+	filtering.dbc = on;
+	filtering.dbcfull = onfull;
+	filtering.gp = {onfull,[]};
+
 end
 
 function bool=effeq(a,b)
+	%EFFEQ checks if numbers/arrays are effectively equal
 	bool = abs(a-b) < eps;	
 end

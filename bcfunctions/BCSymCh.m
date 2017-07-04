@@ -1,17 +1,17 @@
 function [rhs,bc] = BCSymCh(grids,filtering,rhs,par)
 	
-	xmeshfull = grids{7};
-	ymeshfull = grids{8};
-	xmesh = grids{3};
-	ymesh = grids{4};
-	nx = grids{9};
-	valindinner = filtering{2}{1};
-	valindouter = filtering{2}{2};
+	xmeshfull = grids.xmeshfull;
+	ymeshfull = grids.ymeshfull;
+	xmesh = grids.xmesh;
+	ymesh = grids.ymesh;
+	nx = grids.nx;
+	valindinner = filtering.valindinner;
+	valindouter = filtering.valindouter;
 	
-	on = filtering{3}{1};
-	onfull = filtering{3}{2};
-	dbcfull = filtering{4}{2};
-	gpca = filtering{5};
+	on = filtering.on;
+	onfull = filtering.onfull;
+	dbcfull = filtering.dbcfull;
+	gpca = filtering.gp;
 	
 	h = par.h;
 	
@@ -72,8 +72,8 @@ function [rhs,bc] = BCSymCh(grids,filtering,rhs,par)
 	for i=1:par.order-1
 		bc{1}{1}{1} = bc{1}{1}{1}|gpca{i}(valindouter);
 		bc{1}{1}{2} = bc{1}{1}{1};
-		bc{1}{2}{1} = logical(filtering{1}'*(1*bc{1}{1}{1}));
-		bc{1}{2}{2} = logical(filtering{1}'*(1*bc{1}{1}{2}));
+		bc{1}{2}{1} = logical(filtering.filterMat'*(1*bc{1}{1}{1}));
+		bc{1}{2}{2} = logical(filtering.filterMat'*(1*bc{1}{1}{2}));
 	end
 	
 end

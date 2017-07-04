@@ -1,18 +1,18 @@
-function [gridsnew,filteringnew,psimeshnew,bcnew,rhsnew,bcb] = Decompose(grids,filtering,psimesh,rhs,par)
+function [gridsnew,filteringnew,qmeshnew,bcnew,rhsnew,bcb] = Decompose(grids,filtering,qmesh,rhs,par)
 	%DECOMPOSE for use with symch
 	
 	ddbounds = par.ddbounds;
-	xmesh = grids{3};
-	ymesh = grids{4};
+	xmesh = grids.xmesh;
+	ymesh = grids.ymesh;
 	del = (par.order-1)*par.h+par.h/2; %the half h is for for floating point arithmetic errors
 	
-	[g1,f1,p1] = getGrid(grids,filtering,psimesh,ddbounds{1},par,del);
-	[g2,f2,p2] = getGrid(grids,filtering,psimesh,ddbounds{2},par,del);
-	[g3,f3,p3] = getGrid(grids,filtering,psimesh,ddbounds{3},par,del);
+	[g1,f1,p1] = getGrid(grids,filtering,qmesh,ddbounds{1},par,del);
+	[g2,f2,p2] = getGrid(grids,filtering,qmesh,ddbounds{2},par,del);
+	[g3,f3,p3] = getGrid(grids,filtering,qmesh,ddbounds{3},par,del);
 	
 	gridsnew = {g1,g2,g3};
 	filteringnew = {f1,f2,f3};
-	psimeshnew = {p1,p2,p3};
+	qmeshnew = {p1,p2,p3};
 	
 	bc1 = f1{3}{1};
 	bc2 = f2{3}{1};
@@ -76,9 +76,9 @@ function [gridsnew,filteringnew,psimeshnew,bcnew,rhsnew,bcb] = Decompose(grids,f
 	bcb3{3} = (xmesh3 >= blx22-del) & (xmesh3 <= blx22+eps) & (ymesh3 >= bly21-del) & (ymesh3 <= bly22+del);
 	bcb3{2} = bc2 & (xmesh2 >= blx22-eps) & (ymesh2 >= bly21-del) & (ymesh2 <= bly22+del);
 	
-	bcsur = filtering{3}{1};
+	bcsur = filtering.on;
 	for i=1:par.order-1
-		bcsur = bcsur | filtering{5}{i}(filtering{2}{2});
+		bcsur = bcsur | filtering.gp{i}(filtering.valindouter);
 	end
 	
 	onouter1 = bcsur((xmesh >= blx11-del) & (xmesh <= blx12+del) & (ymesh >= bly11-del) & (ymesh <= bly12+del));
@@ -108,12 +108,12 @@ function [gridsnew,filteringnew,psimeshnew,bcnew,rhsnew,bcb] = Decompose(grids,f
 
 end
 
-function [g,f,psimeshnew] = getGrid(grids,filtering,psimesh,bnds,par,del)
+function [g,f,qmeshnew] = getGrid(grids,filtering,qmesh,bnds,par,del)
 	
-	xinit = grids{1};
-	yinit = grids{2};
-	xmesh = grids{3};
-	ymesh = grids{4};
+	xinit = grids.xinit;
+	yinit = grids.yinit;
+	xmesh = grids.xmesh;
+	ymesh = grids.ymesh;
 	
 	vinds = (xmesh >= bnds{1}(1)-del) & (xmesh <= bnds{2}(1)+del) ...
 				& (ymesh >= bnds{1}(2)-del) & (ymesh <= bnds{2}(2)+del);
@@ -127,12 +127,12 @@ function [g,f,psimeshnew] = getGrid(grids,filtering,psimesh,bnds,par,del)
 	
 	xmeshnew = xmesh(vinds);
 	ymeshnew = ymesh(vinds);
-	psimeshnew = psimesh(vinds);
+	qmeshnew = qmesh(vinds);
 	
 	Xmeshnew = reshape(xmeshnew,[nxnew,nynew])';
 	Ymeshnew = reshape(ymeshnew,[nxnew,nynew])';
 	
-	g = {xinitnew,yinitnew,xmeshnew,ymeshnew,Xmeshnew,Ymeshnew,xmeshnew,ymeshnew,nxnew,nynew,grids{11}};
+	g = {xinitnew,yinitnew,xmeshnew,ymeshnew,Xmeshnew,Ymeshnew,xmeshnew,ymeshnew,nxnew,nynew,grids.h};
 
 	%filterMat,{valindinner,valindouter},{on,onfull},{dbc,dbcfull},{gp1,gp2}
 	
