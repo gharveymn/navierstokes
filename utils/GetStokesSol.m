@@ -1,4 +1,4 @@
-function [figs,mat,vec,grids,filtering,bc,rhs] = GetStokesSol(par,figs)
+function [figs,mat,vec,grids,filtering,bc,rhs,par] = GetStokesSol(par,figs)
 	
 	rhfunc = par.rhfunc;
 	bcfunc = par.bcfunc;
@@ -7,22 +7,26 @@ function [figs,mat,vec,grids,filtering,bc,rhs] = GetStokesSol(par,figs)
 	
 	[grids,filtering,par] = MakeGrids(par);
 	
-	nxp1 = numel(grids.xinit);
-	nyp1 = numel(grids.yinit);
+	nxp1 = numel(grids.inner.xinit);
+	nyp1 = numel(grids.inner.yinit);
 	
 	%implement external force function (on rhs)
-	rhs = rhfunc(grids.xmesh,grids.ymesh);
+	rhs = rhfunc(grids.inner.xmesh,grids.inner.ymesh);
 	
 	%make right hand side for Dirichlet BCs and get indices for those points
 	[rhs,bc] = bcfunc(grids,filtering,rhs,par);
 	
+	maxu = max(diff(rhs(grids.inner.xmesh==min(grids.inner.xmesh)))/grids.h);
+	L = max(grids.inner.xinit) - min(grids.inner.xinit);
+	par.Re = (maxu*L)/par.nu;
+	
 	%  	filterMat = filtering.filterMat;
 	%   	rmeshfull = filterMat'*rhs;
 	%   	Rmesh = reshape(rmeshfull,[nx,ny])';
-	%   	surf(grids.Xmesh,grids.Ymesh,Rmesh,'edgecolor','none','facecolor','interp');
+	%   	surf(grids.inner.Xmesh,grids.inner.Ymesh,Rmesh,'edgecolor','none','facecolor','interp');
 	% 	clr = abs(rmeshfull)./norm(rmeshfull(isfinite(rmeshfull)),inf);
 	% 	clrs = [clr zeros(numel(clr),1) 1-clr];
-	%   	scatter3(grids.xmeshfull,grids.ymeshfull,rmeshfull,[],clrs,'.');
+	%   	scatter3(grids.inner.xmeshfull,grids.inner.ymeshfull,rmeshfull,[],clrs,'.');
 	
 	filterMat = filtering.filterMat;
 	
@@ -57,15 +61,15 @@ function [figs,mat,vec,grids,filtering,bc,rhs] = GetStokesSol(par,figs)
 		
 		if(par.filter)
 			on = filtering.on;
-			grids.xmesh = grids.xmesh(~on);
-			grids.ymesh = grids.ymesh(~on);
+			grids.inner.xmesh = grids.inner.xmesh(~on);
+			grids.inner.ymesh = grids.inner.ymesh(~on);
 			umesh = umesh(~on);
 			vmesh = vmesh(~on);
 			pmesh = pmesh(~on);
 		end
 		
-		mat = cat(3,grids.Xmesh,grids.Ymesh,Umesh,Vmesh,Pmesh);
-		vec = cat(2,grids.xmesh,grids.ymesh,umesh,vmesh,pmesh);
+		mat = cat(3,grids.inner.Xmesh,grids.inner.Ymesh,Umesh,Vmesh,Pmesh);
+		vec = cat(2,grids.inner.xmesh,grids.inner.ymesh,umesh,vmesh,pmesh);
 		
 		if(par.plot)
 			if(exist('figs','var'))

@@ -158,8 +158,9 @@ function figs = Update(mat,vec,par,figs)
 			set(figs{3},'CData',clrs);
 			
 		elseif(par.toPlot == 4)
-			disp('Couldn''t update one of the figures; we''ll try to make new ones')
-			figs = InitialPlot(mat,vec,par);
+			set(figs{1}{2},'ZData',U);
+			set(figs{2}{2},'ZData',V);
+			set(figs{3}{2},'ZData',Q);
 		end
 
 		drawnow;

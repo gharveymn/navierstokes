@@ -1,12 +1,9 @@
-function [rhs,bc] = BCSymCh(grids,filtering,rhs,par)
+function [rhs,bcio] = BCSymCh(grids,filtering,rhs,par)
 	
-	xmeshfull = grids.xmeshfull;
-	ymeshfull = grids.ymeshfull;
 	xmesh = grids.xmesh;
 	ymesh = grids.ymesh;
-	nx = grids.nx;
-	valindinner = filtering.valindinner;
-	valindouter = filtering.valindouter;
+	nxp1 = par.nxp1;
+	valind = filtering.valind;
 	
 	on = filtering.on;
 	onfull = filtering.onfull;
@@ -18,7 +15,7 @@ function [rhs,bc] = BCSymCh(grids,filtering,rhs,par)
 	% add all the the indices which are on the boundary
 	% bc{1} - dirichlet
 	% bc{2} - neumann
-	bc = {{{on,on},{onfull,onfull}},{{[],[]},{[],[]}}};
+	bcio = {{{on,on},{onfull,onfull}},{{[],[]},{[],[]}}};
 	
 	xmax = max(xmesh(on));
 	xmin = min(xmesh(on));
@@ -60,21 +57,27 @@ function [rhs,bc] = BCSymCh(grids,filtering,rhs,par)
 	rhs = rhs + out;
 	
 	% set top
-	rhs(ymesh > centerout & ~(xmesh==inflowx | xmesh==outflowx) & on) = out(xmesh==xmax&ymesh==ymax);
+	rhs(ymesh > centerout & ~(effeq(xmesh,inflowx) | effeq(xmesh,outflowx)) & on) = 0;
 	
 	% set bottom
-	rhs(ymesh < centerout & ~(xmesh==inflowx | xmesh==outflowx) & on) = out(xmesh==xmax&ymesh==ymin);
+	rhs(ymesh < centerout & ~(effeq(xmesh,inflowx) | effeq(xmesh,outflowx)) & on) = 0;
 	
-	if(par.order > 1)
-		rhs = extendgp(rhs,dbcfull,valindouter,gpca,nx);
+	if(par.ghostpoints)
+		if(par.order > 1)
+			rhs = extendgp(rhs,dbcfull,valind,gpca,nxp1);
+		end
+
+		for i=1:par.order-1
+			bcio{1}{1}{1} = bcio{1}{1}{1}|gpca{i}(valind);
+			bcio{1}{1}{2} = bcio{1}{1}{1};
+			bcio{1}{2}{1} = logical(filtering.filterMat'*(1*bcio{1}{1}{1}));
+			bcio{1}{2}{2} = logical(filtering.filterMat'*(1*bcio{1}{1}{2}));
+		end
+	else
+		bcio = ((xmesh==inflowx) & on) | ((xmesh==outflowx) & on);
 	end
 	
-	for i=1:par.order-1
-		bc{1}{1}{1} = bc{1}{1}{1}|gpca{i}(valindouter);
-		bc{1}{1}{2} = bc{1}{1}{1};
-		bc{1}{2}{1} = logical(filtering.filterMat'*(1*bc{1}{1}{1}));
-		bc{1}{2}{2} = logical(filtering.filterMat'*(1*bc{1}{1}{2}));
-	end
+	filtering.bcinout = bcio;
 	
 end
 

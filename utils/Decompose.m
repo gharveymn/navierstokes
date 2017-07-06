@@ -2,8 +2,8 @@ function [gridsnew,filteringnew,qmeshnew,bcnew,rhsnew,bcb] = Decompose(grids,fil
 	%DECOMPOSE for use with symch
 	
 	ddbounds = par.ddbounds;
-	xmesh = grids.xmesh;
-	ymesh = grids.ymesh;
+	xmesh = grids.inner.xmesh;
+	ymesh = grids.inner.ymesh;
 	del = (par.order-1)*par.h+par.h/2; %the half h is for for floating point arithmetic errors
 	
 	[g1,f1,p1] = getGrid(grids,filtering,qmesh,ddbounds{1},par,del);
@@ -110,10 +110,10 @@ end
 
 function [g,f,qmeshnew] = getGrid(grids,filtering,qmesh,bnds,par,del)
 	
-	xinit = grids.xinit;
-	yinit = grids.yinit;
-	xmesh = grids.xmesh;
-	ymesh = grids.ymesh;
+	xinit = grids.inner.xinit;
+	yinit = grids.inner.yinit;
+	xmesh = grids.inner.xmesh;
+	ymesh = grids.inner.ymesh;
 	
 	vinds = (xmesh >= bnds{1}(1)-del) & (xmesh <= bnds{2}(1)+del) ...
 				& (ymesh >= bnds{1}(2)-del) & (ymesh <= bnds{2}(2)+del);

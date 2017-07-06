@@ -43,10 +43,10 @@ function [grids,filtering,par] = MakeGrids(par)
 	limits = [min(xlimcoords),max(xlimcoords),min(ylimcoords),max(ylimcoords)];
 	xinit = (limits(1):par.h:limits(2))';
 	yinit = (limits(3):par.h:limits(4))';
-	nx = numel(xinit);
-	ny = numel(yinit);
-	xmeshfull = kron(ones(ny,1),xinit);
-	ymeshfull = kron(yinit,ones(nx,1));
+	nxp1 = numel(xinit);
+	nyp1 = numel(yinit);
+	xmeshfull = kron(ones(nyp1,1),xinit);
+	ymeshfull = kron(yinit,ones(nxp1,1));
 	
 	%Credit to Darren Engwirda for inpoly
 	[valind,onfull] = inpoly(horzcat(xmeshfull,ymeshfull),horzcat(xlimcoords,ylimcoords));
@@ -56,22 +56,26 @@ function [grids,filtering,par] = MakeGrids(par)
 	
 	on = onfull(valind);
 	
-	Xmesh = reshape(xmeshfull./valind,[nx,ny])';
-	Ymesh = reshape(ymeshfull./valind,[nx,ny])';
+	Xmesh = reshape(xmeshfull./valind,[nxp1,nyp1])';
+	Ymesh = reshape(ymeshfull./valind,[nxp1,nyp1])';
 	
 	xmesh = filterMat*xmeshfull;
 	ymesh = filterMat*ymeshfull;
 
-	grids.xinit = xinit;
-	grids.yinit = yinit;
-	grids.xmesh = xmesh;
-	grids.ymesh = ymesh;
-	grids.Xmesh = Xmesh;
-	grids.Ymesh = Ymesh;
-	grids.xmeshfull = xmeshfull;
-	grids.ymeshfull = ymeshfull;
-	grids.nx = nx;
-	grids.ny = ny;
+	grids.inner.xinit = xinit;
+	grids.inner.yinit = yinit;
+	grids.inner.xmesh = xmesh;
+	grids.inner.ymesh = ymesh;
+	grids.inner.Xmesh = Xmesh;
+	grids.inner.Ymesh = Ymesh;
+	grids.inner.xmeshfull = xmeshfull;
+	grids.inner.ymeshfull = ymeshfull;
+	grids.nxp1 = nxp1;
+	grids.nyp1 = nyp1;
+	grids.nx = nxp1-1;
+	grids.ny = nyp1-1;
+	grids.nxm1 = nxp1-2;
+	grids.nym1 = nyp1-2;
 	grids.h = par.h;
 	
 	filtering.filterMat= filterMat;
@@ -79,8 +83,12 @@ function [grids,filtering,par] = MakeGrids(par)
 	filtering.valindouter = valind;
 	filtering.on = on;
 	filtering.onfull = onfull;
-	filtering.dbc = on;
-	filtering.dbcfull = onfull;
+	
+	[dbc,dbcfull] = boundarysides(grids,filtering);
+	
+	filtering.dbc = dbc;
+	filtering.dbcfull = dbcfull;
+	filtering.gp = [];
 	
 	%we're going to hard set a max of 3 for now, otherwise it gets needlessly complex.
 	if(par.ghostpoints)

@@ -1,4 +1,4 @@
-function [figs,mat,vec]  = NSIter(par,figs,mat,vec,grids,filtering,bc,rhs)
+function [figs,mat,vec] = NSIter(par,figs,mat,vec,grids,filtering,bc,rhs)
 	
 	qmesh = vec(:,5);
 	
@@ -7,13 +7,13 @@ function [figs,mat,vec]  = NSIter(par,figs,mat,vec,grids,filtering,bc,rhs)
 	omega = 0.5;
 	
 	filterMat = filtering.filterMat;
-	nx = grids.nx;
-	ny = grids.ny;
+	nx = grids.nxp1;
+	ny = grids.nyp1;
 	h = grids.h;
-	xinit = grids.xinit;
-	yinit = grids.yinit;
-	xmesh = grids.xmesh;
-	ymesh = grids.ymesh;
+	xinit = grids.inner.xinit;
+	yinit = grids.inner.yinit;
+	xmesh = grids.inner.xmesh;
+	ymesh = grids.inner.ymesh;
 	
 	bih = biharmonic2(nx,ny,h,bc{1}{2}{1},bc{1}{2}{2});
 	bih = filterMat*bih*filterMat';
@@ -29,7 +29,7 @@ function [figs,mat,vec]  = NSIter(par,figs,mat,vec,grids,filtering,bc,rhs)
 	dy = kron(Dy,speye(nx));
 	dy = filterMat*dy*filterMat';
 
-	for k = 1:par.timeSteps
+	for k = 1:par.timesteps
 		Rnq = R*N(qmesh);
 		inout = (bc{1}{1}{1}|bc{1}{1}{2});
 		Rnq = spdiag(~inout)*Rnq + spdiag(inout)*rhs;

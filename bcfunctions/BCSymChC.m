@@ -1,10 +1,10 @@
 function [rhs,bcinds] = BCSymCh(grids,filtering,rhs,par)
 	
-	xmeshfull = grids.xmeshfull;
-	ymeshfull = grids.ymeshfull;
-	xmesh = grids.xmesh;
-	ymesh = grids.ymesh;
-	nx = grids.nx;
+	xmeshfull = grids.inner.xmeshfull;
+	ymeshfull = grids.inner.ymeshfull;
+	xmesh = grids.inner.xmesh;
+	ymesh = grids.inner.ymesh;
+	nx = grids.nxp1;
 	valindinner = filtering.valindinner;
 	valindouter = filtering.valindouter;
 	

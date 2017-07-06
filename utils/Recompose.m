@@ -5,10 +5,10 @@ function qmesh = Recompose(grids,newqs,par)
 	del = (par.order-1)*par.h+par.h/2;
 	
 	%just to allocate
-	qmesh = 0*grids.xmesh;
+	qmesh = 0*grids.inner.xmesh;
 	
-	xmesh = grids.xmesh;
-	ymesh = grids.ymesh;
+	xmesh = grids.inner.xmesh;
+	ymesh = grids.inner.ymesh;
 	
 	b1 = ddbounds{1};
 	b2 = ddbounds{2};

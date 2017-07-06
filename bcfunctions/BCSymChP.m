@@ -1,9 +1,9 @@
 function [rhs,bc] = BCSymChP(grids,filtering,rhs,par)
 	%BCSYMCHP BCSymCh for the primitive formulation
 	
-	xmesh = grids.xmesh;
-	ymesh = grids.ymesh;
-	nx = grids.nx;
+	xmesh = grids.inner.xmesh;
+	ymesh = grids.inner.ymesh;
+	nx = grids.nxp1;
 	valindinner = filtering.valindinner;
 	valindouter = filtering.valindouter;
 	

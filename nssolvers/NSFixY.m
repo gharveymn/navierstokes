@@ -1,13 +1,13 @@
 function qmesh = NSFixY(grids,filtering,rhs,bc,par,solver)
 	
-	yinit = grids.yinit;
-	xmesh = grids.xmesh;
-	ymesh = grids.ymesh;
+	yinit = grids.inner.yinit;
+	xmesh = grids.inner.xmesh;
+	ymesh = grids.inner.ymesh;
 	
 	%for now we will just boost efficiency by keeping two types of derivative matrices
 
-	nx = grids.nx;
-	ny = grids.ny;
+	nx = grids.nxp1;
+	ny = grids.nyp1;
 	h = grids.h;
 	filterMat = filtering.filterMat;
 

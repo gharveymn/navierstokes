@@ -3,8 +3,8 @@ function [qmesh,mats] = SOBih(grids,filtering,rhs,bc,mats)
 	if(nargin == 7)
 		M = mats{1};
 	else
-		nx = grids.nx;
-		ny = grids.ny;
+		nx = grids.nxp1;
+		ny = grids.nyp1;
 		h = grids.h;
 		filterMat = filtering.filterMat;
 		

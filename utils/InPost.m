@@ -4,8 +4,8 @@ function [figs,mat,vec] = InPost(qmesh,bc,grids,filtering,par,figs)
 	h = par.h;
 	qmeshfull = filtering.filterMat'*qmesh;
 	
-	nx = grids.nx;
-	ny = grids.ny;
+	nx = grids.nxp1;
+	ny = grids.nyp1;
 	
 	bcxdfull = bc{1}{2}{1};
 	bcydfull = bc{1}{2}{2};
@@ -52,11 +52,11 @@ function [figs,mat,vec] = InPost(qmesh,bc,grids,filtering,par,figs)
 		
 		bcxd = logical(filterMat*(1*bcxdfull));
 		bcyd = logical(filterMat*(1*bcydfull));
-		xmesh = grids.xmesh;
-		ymesh = grids.ymesh;
+		xmesh = grids.inner.xmesh;
+		ymesh = grids.inner.ymesh;
 		qmesh = filterMat*qmeshfull;
-		nx = grids.nx;
-		ny = grids.ny;
+		nx = grids.nxp1;
+		ny = grids.nyp1;
 		h = grids.h;
 		
 		Dx = sptoeplitz([0 -1],[0 1],nx)./(2*h);
@@ -79,11 +79,11 @@ function [figs,mat,vec] = InPost(qmesh,bc,grids,filtering,par,figs)
 		
 		%Switch to first order on the boundary
 		dbc = boundarysides(grids,filtering);
-		bcw = dbc{1};
-		bce = dbc{2};
-		bcs = dbc{3};
-		bcn = dbc{4};
-		bcc = dbc{5};
+		bcw = dbc.w;
+		bce = dbc.e;
+		bcs = dbc.s;
+		bcn = dbc.n;
+		bcc = dbc.c;
 
 		Dx = sptoeplitz([0 -1],[0 1],nx)./(2*h);
 		dx = kron(speye(ny),Dx);
@@ -121,8 +121,8 @@ function [figs,mat,vec] = InPost(qmesh,bc,grids,filtering,par,figs)
 	Qmesh = reshape(qmeshfull,[nx,ny])';
 	
 	% use matrices rather than cell arrays so they throw a dimension error if we have a bug mismatched
-	mat = cat(3,grids.Xmesh,grids.Ymesh,Umesh,Vmesh,Qmesh);
-	vec = cat(2,grids.xmesh,grids.ymesh,umesh,vmesh,qmesh);
+	mat = cat(3,grids.inner.Xmesh,grids.inner.Ymesh,Umesh,Vmesh,Qmesh);
+	vec = cat(2,grids.inner.xmesh,grids.inner.ymesh,umesh,vmesh,qmesh);
 	
 	if(par.plot)
 		if(exist('figs','var'))

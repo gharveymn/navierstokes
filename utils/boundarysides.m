@@ -1,21 +1,25 @@
-function [dbc,dbcfull] = boundarysides(grids,filtering,gp,side)
+function [dbc,dbcfull] = boundarysides(grids,filtering,par,side)
 	%GETWHEREBOUNDARIES I'm somewhat suprised this actually works
 	
 	if(~exist('side','var'))
 		side = 'inner';
 	end
 	
-	xmeshfull = grids.xmeshfull;
-	ymeshfull = grids.ymeshfull;
-	
-	if(strcmp(side,'outer'))
-		onfull = gp;
+	if(strcmp(side,'inner'))
+		xmeshfull = grids.inner.xmeshfull;
+		ymeshfull = grids.inner.ymeshfull;
+		onfull = filtering.inner.onfull;
+		valindinner = filtering.inner.valind;
+	elseif(strcmp(side,'outer'))
+		xmeshfull = grids.outer.xmeshfull;
+		ymeshfull = grids.outer.ymeshfull;
+		onfull = filtering.outer.onfull;
+		valindouter = filtering.outer.valind;
 	else
-		onfull = filtering.onfull;
+		ME = MException('boundarysides:invalidParameterException','Invalid value for side');
+		throw(ME)
 	end
-	valindinner = filtering.valindinner;
-	valindouter = filtering.valindouter;
-	nx = grids.nx;
+	nxp1 = par.nxp1;
 	
 	xmin = min(xmeshfull);
 	xmax = max(xmeshfull);
@@ -42,19 +46,16 @@ function [dbc,dbcfull] = boundarysides(grids,filtering,gp,side)
 	
 	%make shifted index matrices, filter out those indices at the max values since circshift loops
 	
-	if(strcmp(side,'outer'))
-		r = circshift(valindouter&~xmaxb,1);
-		l = circshift(valindouter&~xminb,-1);
-		u = circshift(valindouter&~ymaxb,nx);
-		d = circshift(valindouter&~yminb,-nx);
-	elseif(strcmp(side,'inner'))
+	if(strcmp(side,'inner'))
 		r = circshift(valindinner&~xmaxb,1);
 		l = circshift(valindinner&~xminb,-1);
-		u = circshift(valindinner&~ymaxb,nx);
-		d = circshift(valindinner&~yminb,-nx);
+		u = circshift(valindinner&~ymaxb,nxp1);
+		d = circshift(valindinner&~yminb,-nxp1);
 	else
-		ME = MException('boundarysides:invalidParameterException','Invalid value for side');
-		throw(ME)
+		r = circshift(valindouter&~xmaxb,1);
+		l = circshift(valindouter&~xminb,-1);
+		u = circshift(valindouter&~ymaxb,nxp1);
+		d = circshift(valindouter&~yminb,-nxp1);
 	end
 	
 	%if the shift makes it go off the boundary then we have a direction
@@ -75,15 +76,27 @@ function [dbc,dbcfull] = boundarysides(grids,filtering,gp,side)
 	%bcn = bcn|bcci;
 	bcc = bcc|bcci;
 	
-	dbcfull = {bcw,bce,bcs,bcn,bcc};
+	dbcfull.w = bcw;
+	dbcfull.e = bce;
+	dbcfull.s = bcs;
+	dbcfull.n = bcn;
+	dbcfull.c = bcc;
 	
 	%wipe out invalid indices
-	bcw = bcw(valindouter);
-	bce = bce(valindouter);
-	bcs = bcs(valindouter);
-	bcn = bcn(valindouter);
-	bcc = bcc(valindouter);
+	if(strcmp(side,'inner'))
+		dbc.w = bcw(valindinner);
+		dbc.e = bce(valindinner);
+		dbc.s = bcs(valindinner);
+		dbc.n = bcn(valindinner);
+		dbc.c = bcc(valindinner);
+	else
+		dbc.w = bcw(valindouter);
+		dbc.e = bce(valindouter);
+		dbc.s = bcs(valindouter);
+		dbc.n = bcn(valindouter);
+		dbc.c = bcc(valindouter);
+	end
 	
-	dbc = {bcw,bce,bcs,bcn,bcc};
+	
 end
 
