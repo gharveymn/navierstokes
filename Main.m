@@ -7,26 +7,31 @@ if(par.usestagger)
 	
 	[grids,filtering,par] = MakeStaggeredGrids(par);
 	
-	%implement external force function (on rhs)
-	prhs = par.rhfunc(grids.p.outer.xmesh,grids.p.outer.ymesh);
-	[prhs,pbcio] = par.bcfunc(grids.p.outer,filtering.p.outer,prhs,par);
-	filtering.p.bcio = pbcio;
-	rhs.p = prhs;
+	%inner
+	rhs.inner.p = par.rhfunc(grids.p.inner.xmesh,grids.p.inner.ymesh);
+	[rhs.inner.p,filtering.p.inner.bcio] = par.bcfunc(grids.p.inner,filtering.p.inner,rhs.inner.p,par);
 	
-	urhs = par.rhfunc(grids.u.outer.xmesh,grids.u.outer.ymesh);
-	[urhs,ubcio] = par.bcfunc(grids.u.outer,filtering.u.outer,urhs,par);
-	filtering.u.bcio = ubcio;
-	rhs.u = urhs;
+	rhs.inner.u = par.rhfunc(grids.u.inner.xmesh,grids.u.inner.ymesh);
+	[rhs.inner.u,filtering.u.inner.bcio] = par.bcfunc(grids.u.inner,filtering.u.inner,rhs.inner.u,par);
 	
-	vrhs = par.rhfunc(grids.v.outer.xmesh,grids.v.outer.ymesh);
-	[vrhs,vbcio] = par.bcfunc(grids.v.outer,filtering.v.outer,vrhs,par);
-	filtering.v.bcio = vbcio;
-	rhs.v = vrhs;
+	rhs.inner.v = par.rhfunc(grids.v.inner.xmesh,grids.v.inner.ymesh);
+	[rhs.inner.v,filtering.v.inner.bcio] = par.bcfunc(grids.v.inner,filtering.v.inner,rhs.inner.v,par);
 	
-	qrhs = par.rhfunc(grids.q.outer.xmesh,grids.q.outer.ymesh);
-	[qrhs,qbcio] = par.bcfunc(grids.q.outer,filtering.q.outer,qrhs,par);
-	filtering.q.bcio = qbcio;
-	rhs.q = qrhs;
+	rhs.inner.q = par.rhfunc(grids.q.inner.xmesh,grids.q.inner.ymesh);
+	[rhs.inner.q,filtering.q.inner.bcio] = par.bcfunc(grids.q.inner,filtering.q.inner,rhs.inner.q,par);
+	
+	%outer
+	rhs.outer.p = par.rhfunc(grids.p.outer.xmesh,grids.p.outer.ymesh);
+	[rhs.outer.p,filtering.p.outer.bcio] = par.bcfunc(grids.p.outer,filtering.p.outer,rhs.outer.p,par);
+	
+	rhs.outer.u = par.rhfunc(grids.u.outer.xmesh,grids.u.outer.ymesh);
+	[rhs.outer.u,filtering.u.outer.bcio] = par.bcfunc(grids.u.outer,filtering.u.outer,rhs.outer.u,par);
+	
+	rhs.outer.v = par.rhfunc(grids.v.outer.xmesh,grids.v.outer.ymesh);
+	[rhs.outer.v,filtering.v.outer.bcio] = par.bcfunc(grids.v.outer,filtering.v.outer,rhs.outer.v,par);
+	
+	rhs.outer.q = par.rhfunc(grids.q.outer.xmesh,grids.q.outer.ymesh);
+	[rhs.outer.q,filtering.q.outer.bcio] = par.bcfunc(grids.q.outer,filtering.q.outer,rhs.outer.q,par);
 	
 	if(~exist('figs','var'))
 		[par,mat,vec] = par.nssolver(par,grids,filtering,rhs);
