@@ -5,7 +5,7 @@ end
 
 if(par.usestagger)
 	
-	[grids,filtering,par] = MakeStaggeredGrids(par);
+	[grids,filtering,par] = par.gridmaker(par);
 	
 	%inner
 	rhs.inner.p = par.rhfunc(grids.p.inner.xmesh,grids.p.inner.ymesh);

@@ -11,8 +11,8 @@ function par = Parameters
 	addpath('utils');
 	
 	par.maptype = 'g';
-	par.mapfile = 'symch.txt';
-	par.h = 0.05;
+	par.mapfile = 'box.txt';
+	par.h = 0.01;
 	par.ghostpoints = false;
 	par.streamfunction = true;
 	par.order = 2;
@@ -42,10 +42,11 @@ function par = Parameters
 	par.topause = 0;
 	
 	par.rhfunc = @RHZero;
-	par.bcfunc = @BCSymChNS;
+	par.bcfunc = @BCDrivCav;
 	par.solver = @SOBih;
 	par.ddsolver = @DDMSch;
 	par.nssolver = @NSPrim;
+	par.gridmaker = @MakeStaggeredGridsBox;
 	
 end
 
