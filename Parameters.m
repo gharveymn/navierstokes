@@ -12,7 +12,7 @@ function par = Parameters
 	
 	par.maptype = 'g';
 	par.mapfile = 'box.txt';
-	par.h = 0.01;
+	par.h = 0.005;
 	par.ghostpoints = false;
 	par.streamfunction = true;
 	par.order = 2;
