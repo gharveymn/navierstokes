@@ -1,4 +1,4 @@
-function [figs,mat,vec] = InPost(qmesh,bc,grids,filtering,par,figs)
+function [figs,mat,vec] = InPost(qmesh,grids,filtering,par,figs)
 	%INPOST does the post processing of calculation
 	
 	h = par.h;
@@ -7,44 +7,8 @@ function [figs,mat,vec] = InPost(qmesh,bc,grids,filtering,par,figs)
 	nx = grids.nxp1;
 	ny = grids.nyp1;
 	
-	bcxdfull = bc{1}{2}{1};
-	bcydfull = bc{1}{2}{2};
-	
 	%TODO change so that derivatives are cool at boundaries
 	if(par.ghostpoints)
-
-		if(par.filter)
-			
-			%again we're setting a hard limit of order 3
-			switch par.order
-				case 1
-					%do nothing
-				case 2
-					[~,~,~,bcxdfull] = closure(grids,filtering,'inner',filtering.gp{1},bcxdfull);
-					[~,~,~,bcydfull] = closure(grids,filtering,'inner',filtering.gp{1},bcydfull);
-					[~,~,~,qmeshfull] = closure(grids,filtering,'inner',filtering.gp{1},qmeshfull);
-					[~,grids,filtering] = closure(grids,filtering,'inner',filtering.gp{1},filtering.gp{1});
-				case 3
-					[~,~,~,bcxdfull] = closure(grids,filtering,'inner',filtering.gp{2},bcxdfull);
-					[~,~,~,bcydfull] = closure(grids,filtering,'inner',filtering.gp{2},bcydfull);
-					[~,~,~,qmeshfull] = closure(grids,filtering,'inner',filtering.gp{2},qmeshfull);
-					[~,newgrids,newfiltering,gp] = closure(grids,filtering,'inner',filtering.gp{2},filtering.gp{1});
-
-				% 	[~,~,~,umeshfull] = closure(newgrids,newfiltering,h,'inner',gp,qmeshfull);
-				% 	[~,~,~,vmeshfull] = closure(newgrids,newfiltering,h,'inner',gp,qmeshfull);
-				% 	[~,~,~,qmeshfull] = closure(newgrids,newfiltering,h,'inner',gp,qmeshfull);
-				% 	[~,newgrids,newfiltering,gp] = closure(newgrids,newfiltering,h,'inner',gp,gp);
-
-					[~,~,~,bcxdfull] = closure(newgrids,newfiltering,'inner',gp,bcxdfull);
-					[~,~,~,bcydfull] = closure(newgrids,newfiltering,'inner',gp,bcydfull);
-					[~,~,~,qmeshfull] = closure(newgrids,newfiltering,'inner',gp,qmeshfull);
-					[~,grids,filtering] = closure(newgrids,newfiltering,'inner',gp,gp);
-				otherwise
-					ME = MException('closure:invalidParameterException','Invalid value for par.order');
-					throw(ME)
-			end
-			
-		end
 		
 % 		%TODO figure out how to get back our q at the right size
 		filterMat = filtering.filterMat;

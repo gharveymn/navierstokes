@@ -147,7 +147,13 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	uxlimcoords = xlimcoords;
 	uylimcoords = ylimcoords;
 	%hardcoded for symch
-	for i=1:9
+	for i=1:9	
+		if((i==5 || i==6))
+			uxlimcoords(i) = uxlimcoords(i)-h;
+		else
+			uxlimcoords(i) = uxlimcoords(i)+h;
+		end
+		
 		if(i>1 && i<6)
 			uylimcoords(i) = uylimcoords(i)-h/2;
 		else
@@ -192,6 +198,12 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 		else
 			vxlimcoords(i) = vxlimcoords(i)+h/2;
 		end
+		
+		if(i>1 && i<6)
+			vylimcoords(i) = vylimcoords(i)-h;
+		else
+			vylimcoords(i) = vylimcoords(i)+h;
+		end
 	end
 	[vgrids,vfiltering] = createGridsInner(vxinit,vyinit,nx,nym1,vxlimcoords,vylimcoords,h,par);	
 
@@ -205,9 +217,9 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	%hardcoded for symch
 	for i=1:9
 		if(i==5 || i==6)
-			vxlimcoords(i) = vxlimcoords(i)-h/2;
-		else
 			vxlimcoords(i) = vxlimcoords(i)+h/2;
+		else
+			vxlimcoords(i) = vxlimcoords(i)-h/2;
 		end
 	end
 	[vgrids,vfiltering] = createGridsOuter(vxinit,vyinit,nxp2,nyp1,vxlimcoords,vylimcoords,h,vgrids,vfiltering,par);	
@@ -252,7 +264,7 @@ function [grids,filtering] = createGridsInner(xinit,yinit,nx,ny,xlimcoords,ylimc
 	ymeshfull = kron(yinit,ones(nx,1));
 	
 	%Credit to Darren Engwirda for inpoly
-	[valind,onfull] = inpoly(horzcat(xmeshfull,ymeshfull),horzcat(xlimcoords,ylimcoords));
+	[valind,onfull] = inpoly(horzcat(xmeshfull,ymeshfull),horzcat(xlimcoords,ylimcoords),[],h/4);
 	
 	filterMat = spdiag(valind);
 	filterMat = filterMat(valind,:);
@@ -295,7 +307,7 @@ function [grids,filtering] = createGridsOuter(xinit,yinit,nx,ny,xlimcoords,ylimc
 	ymeshfull = kron(yinit,ones(nx,1));
 	
 	%Credit to Darren Engwirda for inpoly
-	[valind,onfull] = inpoly(horzcat(xmeshfull,ymeshfull),horzcat(xlimcoords,ylimcoords));
+	[valind,onfull] = inpoly(horzcat(xmeshfull,ymeshfull),horzcat(xlimcoords,ylimcoords),[],h/4);
 	
 	% badcorners =		(effeq(xmeshfull,xlimcoords(1)) & effeq(ymeshfull,ylimcoords(1)))...
 	% 			|	(effeq(xmeshfull,xlimcoords(2)) & effeq(ymeshfull,ylimcoords(2)))...

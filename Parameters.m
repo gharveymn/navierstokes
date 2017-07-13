@@ -12,11 +12,11 @@ function par = Parameters
 	
 	par.maptype = 'g';
 	par.mapfile = 'symch.txt';
-	par.h = 0.1;
+	par.h = 0.05;
 	par.ghostpoints = false;
 	par.streamfunction = true;
 	par.order = 2;
-	par.dt = 0.25;
+	par.dt = 0.01;
 	par.timesteps = 2000;
 	par.usestagger = true;
 	
@@ -42,7 +42,7 @@ function par = Parameters
 	par.topause = 0;
 	
 	par.rhfunc = @RHZero;
-	par.bcfunc = @BCSymCh;
+	par.bcfunc = @BCSymChNS;
 	par.solver = @SOBih;
 	par.ddsolver = @DDMSch;
 	par.nssolver = @NSPrim;

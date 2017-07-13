@@ -5,78 +5,165 @@ function [figs,mat,vec] = NSPrim(par,grids,filtering,rhs,figs)
 	ny = grids.p.ny;
 	h = par.h;
 	
-	U = 0*grids.u.inner.Xmesh;
-	V = 0*grids.v.inner.Ymesh;
-	Ue = 0*grids.u.outer.Xmesh;
-	Ve = 0*grids.v.outer.Ymesh;
+	U = zeros([ny,nx-1]);
+	V = zeros([ny-1,nx]);
+	Ue = zeros([ny+2,nx+1]);
+	Ve = zeros([ny+1,nx+2]);
 	
 	Ubc = par.dt/(par.h*par.Re)*reshape(filtering.u.inner.filterMat'*rhs.inner.u,[nx-1,ny])';
 	Vbc = par.dt/(par.h*par.Re)*reshape(filtering.v.inner.filterMat'*rhs.inner.v*0,[nx,ny-1])';
 	
 	Ubcfull = reshape(filtering.u.outer.filterMat'*rhs.outer.u,[nx+1,ny+2])';
-	Vbcfull = reshape(filtering.v.outer.filterMat'*rhs.outer.v,[nx+2,ny+1])';
+	Vbcfull = reshape(filtering.v.outer.filterMat'*rhs.outer.v*0,[nx+2,ny+1])';
 	
 	pdbcfull = filtering.p.inner.dbcfull;
-	Lp = laplacian2(nx,ny,h,1,1,1,1,pdbcfull.w|pdbcfull.e,pdbcfull.s|pdbcfull.n,filtering.p.inner.bcio,-1);
+	Lp = laplacian2(nx,ny,h,1,1,1,1,pdbcfull.w|pdbcfull.e,pdbcfull.s|pdbcfull.n,filtering.p.inner.bciofull,-1);
 	Lp = filtering.p.inner.filterMat*Lp*filtering.p.inner.filterMat';
 	Lp(1,1) = 3/2*Lp(1,1);
 	%perp = symamd(Lp); Rp = chol(Lp(perp,perp)); Rpt = Rp';
 	
 	udbcfull = filtering.u.inner.dbcfull;
-	Lu = laplacian2(nx-1,ny,h,2,3,2,udbcfull.w|udbcfull.e,udbcfull.s|udbcfull.n,filtering.u.inner.bcio,-1);
+	Lu = laplacian2(nx-1,ny,h,3,2,3,1,udbcfull.w|udbcfull.e,udbcfull.s|udbcfull.n,filtering.u.inner.bciofull,-1);
 	Lu = par.dt/par.Re*Lu + speye(size(Lu,1));
+	Lu = filtering.u.inner.filterMat*Lu*filtering.u.inner.filterMat';
 	%peru = symamd(Lu); Ru = chol(Lu(peru,peru)); Rut = Ru';
 	
 	vdbcfull = filtering.v.inner.dbcfull;
-	Lv = laplacian2(nx,ny-1,h,3,2,3,vdbcfull.w|vdbcfull.e,vdbcfull.s|vdbcfull.n,filtering.v.inner.bcio,-1);
+	Lv = laplacian2(nx,ny-1,h,2,3,2,1,vdbcfull.w|vdbcfull.e,vdbcfull.s|vdbcfull.n,filtering.v.inner.bciofull,-1);
 	Lv = par.dt/par.Re*Lv + speye(size(Lv,1));
+	Lv = filtering.v.inner.filterMat*Lv*filtering.v.inner.filterMat';
 	%perv = symamd(Lv); Rv = chol(Lv(perv,perv)); Rvt = Rv';
 	
 	qdbcfull = filtering.q.inner.dbcfull;
-	Lq = laplacian2(nx-1,ny-1,h,2,2,2,qdbcfull.w|qdbcfull.e,qdbcfull.s|qdbcfull.n,filtering.q.inner.bcio,-1);
+	Lq = laplacian2(nx-1,ny-1,h,2,2,2,1,qdbcfull.w|qdbcfull.e,qdbcfull.s|qdbcfull.n,filtering.q.inner.bciofull,-1);
+	Lq = filtering.q.inner.filterMat*Lq*filtering.q.inner.filterMat';
 	%perq = symamd(Lq); Rq = chol(Lq(perq,perq)); Rqt = Rq';
+	
+	uValMat = reshape(filtering.u.inner.valind,[nx-1,ny])';
+	uValMatE = [zeros([ny,1]),uValMat,zeros([ny,1])];
+	uValMatE = logical([zeros([1,nx+1]);uValMatE;zeros([1,nx+1])]);
+	uvalindE = reshape(uValMatE',[],1);
+	
+	vValMat = reshape(filtering.v.inner.valind,[nx,ny-1])';
+	vValMatE = [zeros([ny-1,1]),vValMat,zeros([ny-1,1])];
+	vValMatE = logical([zeros([1,nx+2]);vValMatE;zeros([1,nx+2])]);
+	vvalindE = reshape(vValMatE',[],1);
+	
+	pValMat = reshape(filtering.p.inner.valind,[nx,ny])';
+	pValMatE = [zeros([ny,1]),pValMat,zeros([ny,1])];
+	pValMatE = logical([zeros([1,nx+2]);pValMatE;zeros([1,nx+2])]);
+	pvalindE = reshape(pValMatE',[],1);
+	
+	qValMat = reshape(filtering.q.inner.valind,[nx-1,ny-1])';
+	qValMatE = [zeros([ny-1,1]),qValMat,zeros([ny-1,1])];
+	qValMatE = logical([zeros([1,nx+1]);qValMatE;zeros([1,nx+1])]);
+	qvalindE = reshape(qValMatE',[],1);
+	
+	udbcfullE = filtering.u.outer.dbcfull;
+	vdbcfullE = filtering.v.outer.dbcfull;
+	%gridify
+	udbcfullE.w = gridify(udbcfullE.w,nx+1,ny+2);
+	udbcfullE.e = gridify(udbcfullE.e,nx+1,ny+2);
+	udbcfullE.s = gridify(udbcfullE.s,nx+1,ny+2);
+	udbcfullE.n = gridify(udbcfullE.n,nx+1,ny+2);
+	udbcfullE.c = gridify(udbcfullE.c,nx+1,ny+2);
+	
+	vdbcfullE.w = gridify(vdbcfullE.w,nx+2,ny+1);
+	vdbcfullE.e = gridify(vdbcfullE.e,nx+2,ny+1);
+	vdbcfullE.s = gridify(vdbcfullE.s,nx+2,ny+1);
+	vdbcfullE.n = gridify(vdbcfullE.n,nx+2,ny+1);
+	vdbcfullE.c = gridify(vdbcfullE.c,nx+2,ny+1);
 	
 	for i=1:par.timesteps
 		
 		%nonlinear terms
-		gamma = min(1.2*dt*max(max(max(abs(U)))/hx,max(max(abs(V)))/hy),1);
-		Ue(2:end-1,2:end-1) = U;
-		udbcfull = filtering.u.outer.dbcfull;
-		U(udbcfull.w) = 0;
-		U(udbcfull.e) = 0;
-		U(udbcfull.n) = 0-U(circshift(udbcfull.n,-1)&~(udbcfull.w|udbcfull.e|udbcfull.s));
-		U(udbcfull.s) = 0-U(circshift(udbcfull.s,1)&~(udbcfull.w|udbcfull.e|udbcfull.n));
-		sel = reshape(filtering.u.outer.filterMat'*filtering.u.outer.bcio,[nx+1,ny+2]);
-		U(sel) = Ubcfull(sel);
+		gamma = min(1.2*par.dt*max(max(max(abs(U)))/par.h,max(max(abs(V)))/par.h),1);
 		
-		V(vdbcfull.s) = 0;
-		V(vdbcfull.n) = 0;
-		V(vdbcfull.w) = 0-V(circshift(vdbcfull.n,-nx)&~(vdbcfull.s|vdbcfull.n|vdbcfull.e));
-		V(vdbcfull.e) = 0-V(circshift(vdbcfull.s,nx)&~(vdbcfull.s|vdbcfull.n|vdbcfull.w));
-		sel = reshape(filtering.v.outer.filterMat'*filtering.v.outer.bcio,[nx+1,ny+2]);
-		V(sel) = Vbcfull(sel);	
+		Ue(uValMatE) = U(uValMat);
+		Ue(udbcfullE.w) = Ubcfull(udbcfullE.w);
+		Ue(udbcfullE.e) = Ubcfull(udbcfullE.e);
+		Ue(udbcfullE.n) = 2*Ubcfull(udbcfullE.n)-Ue(udbcfullE.n);
+		Ue(udbcfullE.s) = 2*Ubcfull(udbcfullE.s)-Ue(udbcfullE.s);
+		sel = logical(reshape(filtering.u.outer.filterMat'*(1*filtering.u.outer.bcio),[nx+1,ny+2])');
+		Ue(sel) = Ubcfull(sel);
+		
+		Ve(vValMatE) = V(vValMat);
+		Ve(vdbcfullE.s) = Vbcfull(vdbcfullE.s);
+		Ve(vdbcfullE.n) = Vbcfull(vdbcfullE.n);
+		Ve(vdbcfullE.w) = 2*Vbcfull(vdbcfullE.w)-Ve(vdbcfullE.w);
+		Ve(vdbcfullE.e) = 2*Vbcfull(vdbcfullE.e)-Ve(vdbcfullE.e);
+		sel = logical(reshape(filtering.v.outer.filterMat'*(1*filtering.v.outer.bcio),[nx+2,ny+1])');
+		Ve(sel) = Vbcfull(sel);
 		
 		Ua = mvgavg(Ue);
-		Ud = diff(Ue/2);
+		Ud = diff(Ue)/2;
 		Va = mvgavg(Ve,2);
-		Vd = diff(Ve/2);
+		Vd = diff(Ve')'/2;
 		UVx = diff((Ua.*Va-gamma*abs(Ua).*Vd)')'/h;
 		UVy = diff((Ua.*Va-gamma*Ud.*abs(Va)))/h;
 		
-		Ua = avg(Ue(:,2:end-1));   Ud = diff(Ue(:,2:end-1))/2;
-		Va = avg(Ve(2:end-1,:)')'; Vd = diff(Ve(2:end-1,:)')'/2;
-		U2x = diff(Ua.^2-gamma*abs(Ua).*Ud)/hx;
-		V2y = diff((Va.^2-gamma*abs(Va).*Vd)')'/hy;
-		U = U-dt*(UVy(2:end-1,:)+U2x);
-		V = V-dt*(UVx(:,2:end-1)+V2y);	
+		Ue2 = Ue;
+		Ue2(~uValMatE&reshape(udbcfullE.n|udbcfullE.s,[nx+1,ny+2])') = 0;
+		Ue2 = Ue2(2:end-1,:);
+		Ve2 = Ve;
+		Ve2(~vValMatE&reshape(vdbcfullE.w|vdbcfullE.e,[nx+2,ny+1])') = 0;
+		Ve2 = Ve2(:,2:end-1);
+		Ua = mvgavg(Ue2,2);
+		Ud = diff(Ue2')'/2;
+		Va = mvgavg(Ve2);
+		Vd = diff(Ve2)/2;
+		U2x = diff((Ua.^2-gamma*abs(Ua).*Ud)')'/par.h;
+		V2y = diff((Va.^2-gamma*abs(Va).*Vd))/par.h;
 		
-		if(~exist('figs','var'))
-			[figs,mat,vec] = InPost(qnew,bc,grids,filtering,par);
-		else
-			[figs,mat,vec] = InPost(qnew,bc,grids,filtering,par,figs);
-		end
+		U = U-par.dt*(UVy(:,2:end-1)+U2x);
+		V = V-par.dt*(UVx(2:end-1,:)+V2y);
+		
+		% implicit viscosity
+		rhs = reshape((U+Ubc)',[],1);
+		u = Lu\rhs(filtering.u.inner.valind);
+		U = reshape(filtering.u.inner.filterMat'*u,nx-1,ny)';
+		
+		rhs = reshape((V+Vbc)',[],1);
+		v = Lv\rhs(filtering.v.inner.valind);
+		V = reshape(filtering.v.inner.filterMat'*v,nx,ny-1)';
+		
+		%pressure correction
+		rhs = reshape((diff(Ue2')'+diff(Ve2))'/par.h,[],1);
+		p = Lp\rhs(filtering.p.inner.valind);
+		P = reshape(filtering.p.inner.filterMat'*p,nx,ny)';
+		U = U-diff(P')'/par.h;
+		V = V-diff(P)/par.h;
+		
+		%stream function
+		rhs = reshape((diff(U)-diff(V')')'/par.h,[],1);
+		q = Lq\rhs(filtering.q.inner.valind);
+		Q = reshape(filtering.q.inner.filterMat'*q,nx-1,ny-1)';
+		
+		figure(1)
+		surf(grids.u.inner.Xmesh,grids.u.inner.Ymesh,U);
+		figure(2)
+		surf(grids.v.inner.Xmesh,grids.v.inner.Ymesh,V);
+		figure(3)
+		surf(grids.p.inner.Xmesh,grids.p.inner.Ymesh,P);
+		figure(4)
+		surf(grids.q.inner.Xmesh,grids.q.inner.Ymesh,Q);
+		drawnow;
+		
+% 		if(~exist('figs','var'))
+% 			[figs,mat,vec] = InPost(q,bc,grids,filtering,par);
+% 		else
+% 			[figs,mat,vec] = InPost(q,bc,grids,filtering,par,figs);
+% 		end
 	end
 	
 	
+end
+
+function M = gridify(v,nx,ny)
+	M = reshape(v,[nx,ny])';
+end
+
+function v = vectify(M)
+	v = reshape(M',[],1);
 end
 
