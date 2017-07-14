@@ -23,7 +23,7 @@ function par = Parameters
 	%flow parameters
 	par.inflowAmp = 1;
 	par.nu = 1;							%kinematic viscosity
-	par.Re = 1e3;							%default value
+	par.Re = 1e1;							%default value
 	
 	%plotting parameters
 	par.toPlot = 4;						%1==surf,2==quiver,3==scatter,4==contour

@@ -20,8 +20,9 @@ function [rhs,bcio] = BCSymChNS(grids,filtering,rhs,par)
 	ymin = min(ymesh(on));
 	
 	% driven flow
+	drivy = ymax*ones(numel(on),1);
 	in = ones(numel(on),flowrate);
-	in(~(ymesh==ymax) | ~on) = 0;
+	in(~(ymesh==drivy)) = 0;
 	
 	rhs = rhs + in;
 	

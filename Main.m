@@ -1,5 +1,8 @@
 if(~exist('par','var'))
 	par = Parameters;
+else
+	clear par
+	par = Parameters;
 end
 
 

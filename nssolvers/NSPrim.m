@@ -103,10 +103,10 @@ function [figs,mat,vec] = NSPrim(par,grids,filtering,rhs,figs)
 		UVy = diff((Ua.*Va-gamma*Ud.*abs(Va)))/h;
 		
 		Ue2 = Ue;
-		Ue2(~uValMatE&reshape(udbcfullE.n|udbcfullE.s,[nx+1,ny+2])') = 0;
+		Ue2(~uValMatE&(udbcfullE.n|udbcfullE.s)) = 0;
 		Ue2 = Ue2(2:end-1,:);
 		Ve2 = Ve;
-		Ve2(~vValMatE&reshape(vdbcfullE.w|vdbcfullE.e,[nx+2,ny+1])') = 0;
+		Ve2(~vValMatE&(vdbcfullE.w|vdbcfullE.e)) = 0;
 		Ve2 = Ve2(:,2:end-1);
 		Ua = mvgavg(Ue2,2);
 		Ud = diff(Ue2')'/2;
@@ -129,7 +129,7 @@ function [figs,mat,vec] = NSPrim(par,grids,filtering,rhs,figs)
 		
 		%pressure correction
 		rhs = reshape((diff(Ue2')'+diff(Ve2))'/par.h,[],1);
-		p = Lp\rhs(filtering.p.inner.valind);
+		p = -Lp\rhs(filtering.p.inner.valind);
 		P = reshape(filtering.p.inner.filterMat'*p,nx,ny)';
 		U = U-diff(P')'/par.h;
 		V = V-diff(P)/par.h;
@@ -139,21 +139,34 @@ function [figs,mat,vec] = NSPrim(par,grids,filtering,rhs,figs)
 		q = Lq\rhs(filtering.q.inner.valind);
 		Q = reshape(filtering.q.inner.filterMat'*q,nx-1,ny-1)';
 		
-		figure(1)
-		surf(grids.u.inner.Xmesh,grids.u.inner.Ymesh,U);
-		figure(2)
-		surf(grids.v.inner.Xmesh,grids.v.inner.Ymesh,V);
-		figure(3)
-		surf(grids.p.inner.Xmesh,grids.p.inner.Ymesh,P);
-		figure(4)
-		surf(grids.q.inner.Xmesh,grids.q.inner.Ymesh,Q);
-		drawnow;
+		res.U = U;
+		res.V = V;
+		res.P = P;
+		res.Q = Q;
 		
-% 		if(~exist('figs','var'))
-% 			[figs,mat,vec] = InPost(q,bc,grids,filtering,par);
-% 		else
-% 			[figs,mat,vec] = InPost(q,bc,grids,filtering,par,figs);
-% 		end
+% 		figure(1)
+% 		surf(grids.u.inner.Xmesh,grids.u.inner.Ymesh,U);
+% 		figure(2)
+% 		surf(grids.v.inner.Xmesh,grids.v.inner.Ymesh,V);
+% 		figure(3)
+% 		surf(grids.p.inner.Xmesh,grids.p.inner.Ymesh,P);
+% 		figure(4)
+% 		surf(grids.q.inner.Xmesh,grids.q.inner.Ymesh,Q);
+% 		figure(5)
+% 		U3 = mvgavg(U);
+% 		V3 = mvgavg(V,2);
+% 		Len = sqrt(U3.^2+V3.^2+eps);
+% 		quiver(grids.q.inner.Xmesh,grids.q.inner.Ymesh,U3./Len,V3./Len);
+% 		
+% 		figure(6)
+% 		contour(grids.q.inner.Xmesh,grids.q.inner.Ymesh,Q);
+% 		drawnow;
+		
+ 		if(~exist('figs','var'))
+ 			figs = PlotNS(grids,filtering,res,par);
+ 		else
+ 			figs = PlotNS(grids,filtering,res,par,figs);
+ 		end
 	end
 	
 	
