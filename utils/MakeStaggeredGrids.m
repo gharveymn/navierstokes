@@ -294,7 +294,7 @@ function [grids,filtering] = createGridsInner(xinit,yinit,nx,ny,xlimcoords,ylimc
 	finner.onfull = onfull;
 	filtering.inner = finner;
 	
-	[dbc,dbcfull] = boundarysides(grids,filtering,par,'inner');
+	[dbc,dbcfull] = boundarysides(grids,filtering,par,'inner',nx);
 	
 	filtering.inner.dbc = dbc;
 	filtering.inner.dbcfull = dbcfull;
@@ -351,7 +351,7 @@ function [grids,filtering] = createGridsOuter(xinit,yinit,nx,ny,xlimcoords,ylimc
 	fouter.onfull = onfull;
 	filtering.outer = fouter;
 	
-	[dbc,dbcfull] = boundarysides(grids,filtering,par,'outer');
+	[dbc,dbcfull] = boundarysides(grids,filtering,par,'outer',nx);
 	
 	filtering.outer.dbc = dbc;
 	filtering.outer.dbcfull = dbcfull;

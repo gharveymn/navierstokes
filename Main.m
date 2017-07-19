@@ -1,7 +1,4 @@
-if(~exist('par','var'))
-	par = Parameters;
-else
-	clear par
+if(~exist('testrun','var') || ~testrun)
 	par = Parameters;
 end
 
@@ -45,9 +42,9 @@ if(par.usestagger)
 	filtering.q.outer.bciofull = logical(filtering.q.outer.filterMat'*(1*filtering.q.outer.bcio));
 	
 	if(~exist('figs','var'))
-		[par,mat,vec] = par.nssolver(par,grids,filtering,rhs);
+		[grids,filtering,res,par,figs] = par.nssolver(par,grids,filtering,rhs);
 	else
-		[par,mat,vec] = par.nssolver(par,grids,filtering,rhs,figs);
+		[grids,filtering,res,par,figs] = par.nssolver(par,grids,filtering,rhs,figs);
 	end
 	
 else
@@ -57,26 +54,8 @@ else
 		[figs,mat,vec,grids,filtering,bc,rhs,par] = GetStokesSol(par,figs);
 	end
 	
-	[par,mat,vec] = par.nssolver(par,figs,mat,vec,grids,filtering,bc,rhs);
+	[grids,filtering,res,par,figs] = par.nssolver(par,grids,filtering,rhs,figs);
 	
-end
-
-X = mat(:,:,1);
-Y = mat(:,:,2);
-U = mat(:,:,3);
-V = mat(:,:,4);
-Q = mat(:,:,5);
-
-x = vec(:,1);
-y = vec(:,2);
-u = vec(:,3);
-v = vec(:,4);
-q = vec(:,5);
-
-clear mat vec
-
-if(~exist('testrun','var') || ~testrun)
-	clear par
 end
 
 

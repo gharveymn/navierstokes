@@ -1,4 +1,4 @@
-function par = Parameters
+function par = ParametersDebug
 	% Parameters
 	%
 	% Definite parameters go here
@@ -10,26 +10,25 @@ function par = Parameters
 	addpath('maps');
 	addpath('utils');
 	
-	%set true to switch to ParametersDebug
-	par.debug = false;
-	
 	par.maptype = 'g';
-	par.mapfile = 'symch.txt';
-	par.h = 0.02;
+	par.mapfile = 'box.txt';
+	par.h = 0.01;
 	par.ghostpoints = false;
 	par.streamfunction = true;
 	par.order = 2;
-	par.dt = 0.01;
-	par.timesteps = 2000;
+	par.dt = 1e-2;
+	par.tf = 4e-0;
+	par.timesteps = round(par.tf/par.dt);
 	par.usestagger = true;
+	
 	
 	%flow parameters
 	par.inflowAmp = 1;
 	par.nu = 1;							%kinematic viscosity
-	par.Re = 1e1;							%default value
+	par.Re = 1e2;							%default value
 	
 	%plotting parameters
-	par.toPlot = 2;						%1==normal, 2==debug
+	par.toPlot = 1;						%1==normal, 2==debug
 	par.filter = false;
 	par.numfilter = 1;
 	par.conlines = 30;
@@ -45,15 +44,11 @@ function par = Parameters
 	par.topause = 0;
 	
 	par.rhfunc = @RHZero;
-	par.bcfunc = @BCSymChNS;
+	par.bcfunc = @BCDrivCav;
 	par.solver = @SOBih;
 	par.ddsolver = @DDMSch;
 	par.nssolver = @NSPrim;
-	par.gridmaker = @MakeStaggeredGrids;
-	
-	if(par.debug)
-		par = ParametersDebug;
-	end
+	par.gridmaker = @MakeStaggeredGridsBox;
 	
 end
 

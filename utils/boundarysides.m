@@ -1,4 +1,4 @@
-function [dbc,dbcfull] = boundarysides(grids,filtering,par,side)
+function [dbc,dbcfull] = boundarysides(grids,filtering,par,side,nx)
 	%GETWHEREBOUNDARIES I'm somewhat suprised this actually works
 	
 	if(~exist('side','var'))
@@ -19,7 +19,6 @@ function [dbc,dbcfull] = boundarysides(grids,filtering,par,side)
 		ME = MException('boundarysides:invalidParameterException','Invalid value for side');
 		throw(ME)
 	end
-	nxp1 = par.nxp1;
 	
 	xmin = min(xmeshfull);
 	xmax = max(xmeshfull);
@@ -49,13 +48,13 @@ function [dbc,dbcfull] = boundarysides(grids,filtering,par,side)
 	if(strcmp(side,'inner'))
 		r = circshift(valindinner&~xmaxb,1);
 		l = circshift(valindinner&~xminb,-1);
-		u = circshift(valindinner&~ymaxb,nxp1);
-		d = circshift(valindinner&~yminb,-nxp1);
+		u = circshift(valindinner&~ymaxb,nx);
+		d = circshift(valindinner&~yminb,-nx);
 	else
 		r = circshift(valindouter&~xmaxb,1);
 		l = circshift(valindouter&~xminb,-1);
-		u = circshift(valindouter&~ymaxb,nxp1);
-		d = circshift(valindouter&~yminb,-nxp1);
+		u = circshift(valindouter&~ymaxb,nx);
+		d = circshift(valindouter&~yminb,-nx);
 	end
 	
 	%if the shift makes it go off the boundary then we have a direction
