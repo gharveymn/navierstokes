@@ -5,6 +5,8 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	%Xmesh,Ymesh have NaN wherever invalid -- matrix
 	%filterMat filters out invalids when multiplied, inserts zeros when transposed and multiplied -- matrix
 	%on holds the indices which are on the boundary -- in vector form, not prefiltered
+	%
+	%only availiable for SymCh
 	
 	file = fopen(par.mapfile, 'r');
 	
@@ -20,26 +22,6 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 		ylimcoords((i+1)/2) = data(i+1);
 	end
 	
-	%TODO just make a big rectangle and then cut it down
-	
-	%make dd bounds (if needed)
-	if(par.ddrun)
-		par.ddbounds{1}{1}(1) = xlimcoords(1);
-		par.ddbounds{1}{2}(1) = xlimcoords(3) + par.ddoverlap;
-		par.ddbounds{1}{1}(2) = ylimcoords(1);
-		par.ddbounds{1}{2}(2) = ylimcoords(3);
-		
-		par.ddbounds{2}{1}(1) = xlimcoords(4);
-		par.ddbounds{2}{2}(1) = par.h*round(1/par.h*(par.ddmidratio*xlimcoords(5)...
-			+(1-par.ddmidratio)*xlimcoords(4))) + par.ddoverlap;
-		par.ddbounds{2}{1}(2) = ylimcoords(7);
-		par.ddbounds{2}{2}(2) = ylimcoords(4);
-		
-		par.ddbounds{3}{1}(1) = par.ddbounds{2}{2}(1) - par.ddoverlap;
-		par.ddbounds{3}{2}(1) = xlimcoords(5);
-		par.ddbounds{3}{1}(2) = ylimcoords(6);
-		par.ddbounds{3}{2}(2) = ylimcoords(5);
-	end
 	
 	h = par.h;
 
@@ -49,6 +31,21 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	par.nxp1 = par.nx+1;
 	par.nyp1 = par.ny+1;
 	
+	c = convhull(xlimcoords,ylimcoords);
+	convex = zeros(numel(xlimcoords),1);
+	convex(c) = 1;
+	convex(end) = convex(1);
+	
+	%find where we need to increase/decrease bounds
+	[incx,onincx] = inpoly(horzcat(xlimcoords-h,ylimcoords),horzcat(xlimcoords,ylimcoords),[],h/4);
+	[decx,ondecx] = inpoly(horzcat(xlimcoords+h,ylimcoords),horzcat(xlimcoords,ylimcoords),[],h/4);
+	[incy,onincy] = inpoly(horzcat(xlimcoords,ylimcoords-h),horzcat(xlimcoords,ylimcoords),[],h/4);
+	[decy,ondecy] = inpoly(horzcat(xlimcoords,ylimcoords+h),horzcat(xlimcoords,ylimcoords),[],h/4);
+	
+	incx = incx&(~onincx|convex);
+	decx = decx&(~ondecx|convex);
+	incy = incy&(~onincy|convex);
+	decy = decy&(~ondecy|convex);
 	
 	%Q
 	%------------------------------------------------
@@ -60,22 +57,8 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	nxm1 = numel(qxinit);
 	nym1 = numel(qyinit);
 	
-	qxlimcoords = xlimcoords;
-	qylimcoords = ylimcoords;
-	%hardcoded for symch
-	for i=1:9
-		if(i==5 || i==6)
-			qxlimcoords(i) = qxlimcoords(i)-h;
-		else
-			qxlimcoords(i) = qxlimcoords(i)+h;
-		end
-		
-		if(i>1 && i<6)
-			qylimcoords(i) = qylimcoords(i)-h;
-		else
-			qylimcoords(i) = qylimcoords(i)+h;
-		end
-	end
+	qxlimcoords = xlimcoords - h*incx + h*decx;
+	qylimcoords = ylimcoords - h*incy + h*decy;
 	[qgrids,qfiltering] = createGridsInner(qxinit,qyinit,nxm1,nym1,qxlimcoords,qylimcoords,h,par);
 
 	%outer
@@ -94,22 +77,8 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	pyinit = (limits(3)+h/2:par.h:limits(4)-h/2)';
 	nx = numel(pxinit);
 	ny = numel(pyinit);
-	pxlimcoords = xlimcoords;
-	pylimcoords = ylimcoords;
-	%hardcoded for symch
-	for i=1:9
-		if(i==5 || i==6)
-			pxlimcoords(i) = pxlimcoords(i)-h/2;
-		else
-			pxlimcoords(i) = pxlimcoords(i)+h/2;
-		end
-		
-		if(i>1 && i<6)
-			pylimcoords(i) = pylimcoords(i)-h/2;
-		else
-			pylimcoords(i) = pylimcoords(i)+h/2;
-		end
-	end
+	pxlimcoords = xlimcoords - h/2*incx + h/2*decx;
+	pylimcoords = ylimcoords - h/2*incy + h/2*decy;
 	[pgrids,pfiltering] = createGridsInner(pxinit,pyinit,nx,ny,pxlimcoords,pylimcoords,h,par);
 
 	%outer
@@ -117,22 +86,8 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	pyinit = (limits(3)-h/2:par.h:limits(4)+h/2)';
 	nxp2 = numel(pxinit);
 	nyp2 = numel(pyinit);
-	pxlimcoords = xlimcoords;
-	pylimcoords = ylimcoords;
-	%hardcoded for symch
-	for i=1:9
-		if(i==5 || i==6)
-			pxlimcoords(i) = pxlimcoords(i)+h/2;
-		else
-			pxlimcoords(i) = pxlimcoords(i)-h/2;
-		end
-		
-		if(i>1 && i<6)
-			pylimcoords(i) = pylimcoords(i)+h/2;
-		else
-			pylimcoords(i) = pylimcoords(i)-h/2;
-		end
-	end
+	pxlimcoords = xlimcoords + h/2*incx - h/2*decx;
+	pylimcoords = ylimcoords + h/2*incy - h/2*decy;
 	[pgrids,pfiltering] = createGridsOuter(pxinit,pyinit,nxp2,nyp2,pxlimcoords,pylimcoords,h,pgrids,pfiltering,par);
 
 	%U
@@ -144,22 +99,8 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	uyinit = (limits(3)+h/2:par.h:limits(4)-h/2)';
 	nxm1 = numel(uxinit);
 	ny = numel(uyinit);
-	uxlimcoords = xlimcoords;
-	uylimcoords = ylimcoords;
-	%hardcoded for symch
-	for i=1:9	
-		if((i==5 || i==6))
-			uxlimcoords(i) = uxlimcoords(i)-h;
-		else
-			uxlimcoords(i) = uxlimcoords(i)+h;
-		end
-		
-		if(i>1 && i<6)
-			uylimcoords(i) = uylimcoords(i)-h/2;
-		else
-			uylimcoords(i) = uylimcoords(i)+h/2;
-		end
-	end
+	uxlimcoords = xlimcoords - h*incx + h*decx;
+	uylimcoords = ylimcoords - h/2*incy + h/2*decy;
 	[ugrids,ufiltering] = createGridsInner(uxinit,uyinit,nxm1,ny,uxlimcoords,uylimcoords,h,par);
 
 	%outer
@@ -168,16 +109,7 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	nxp1 = numel(uxinit);
 	nyp2 = numel(uyinit);
 	uxlimcoords = xlimcoords;
-	uylimcoords = ylimcoords;
-	%hardcoded for symch
-	for i=1:9
-		if(i>1 && i<6)
-			uylimcoords(i) = uylimcoords(i)+h/2;
-		else
-			uylimcoords(i) = uylimcoords(i)-h/2;
-		end
-	end
-	
+	uylimcoords = ylimcoords + h/2*incy - h/2*decy;	
 	[ugrids,ufiltering] = createGridsOuter(uxinit,uyinit,nxp1,nyp2,uxlimcoords,uylimcoords,h,ugrids,ufiltering,par);
 	
 	%V
@@ -189,22 +121,8 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	vyinit = (limits(3)+h:par.h:limits(4)-h)';
 	nx = numel(vxinit);
 	nym1 = numel(vyinit);
-	vxlimcoords = xlimcoords;
-	vylimcoords = ylimcoords;
-	%hardcoded for symch
-	for i=1:9
-		if(i==5 || i==6)
-			vxlimcoords(i) = vxlimcoords(i)-h/2;
-		else
-			vxlimcoords(i) = vxlimcoords(i)+h/2;
-		end
-		
-		if(i>1 && i<6)
-			vylimcoords(i) = vylimcoords(i)-h;
-		else
-			vylimcoords(i) = vylimcoords(i)+h;
-		end
-	end
+	vxlimcoords = xlimcoords - h/2*incx + h/2*decx;
+	vylimcoords = ylimcoords - h*incy + h*decy;
 	[vgrids,vfiltering] = createGridsInner(vxinit,vyinit,nx,nym1,vxlimcoords,vylimcoords,h,par);	
 
 	%outer
@@ -212,16 +130,8 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	vyinit = (limits(3):par.h:limits(4))';
 	nxp2 = numel(vxinit);
 	nyp1 = numel(vyinit);
-	vxlimcoords = xlimcoords;
+	vxlimcoords = xlimcoords + h/2*incx - h/2*decx;
 	vylimcoords = ylimcoords;
-	%hardcoded for symch
-	for i=1:9
-		if(i==5 || i==6)
-			vxlimcoords(i) = vxlimcoords(i)+h/2;
-		else
-			vxlimcoords(i) = vxlimcoords(i)-h/2;
-		end
-	end
 	[vgrids,vfiltering] = createGridsOuter(vxinit,vyinit,nxp2,nyp1,vxlimcoords,vylimcoords,h,vgrids,vfiltering,par);	
 
 	%------------------------------------------------

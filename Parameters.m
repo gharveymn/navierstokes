@@ -13,28 +13,33 @@ function par = Parameters
 	%set true to switch to ParametersDebug
 	par.debug = false;
 	
+	par.useGPU = false;
+	
 	par.maptype = 'g';
 	par.mapfile = 'symch.txt';
-	par.h = 0.02;
+	par.h = 0.05;
 	par.ghostpoints = false;
 	par.streamfunction = true;
 	par.order = 2;
 	par.dt = 0.01;
-	par.timesteps = 2000;
+	par.tf = 40;
+	par.timesteps = round(par.tf/par.dt);
 	par.usestagger = true;
 	
 	%flow parameters
 	par.inflowAmp = 1;
 	par.nu = 1;							%kinematic viscosity
-	par.Re = 1e1;							%default value
+	par.Re = 1e2;							%default value
 	
 	%plotting parameters
-	par.toPlot = 2;						%1==normal, 2==debug
+	par.toPlot = 1;						%1==normal, 2==debug
 	par.filter = false;
 	par.numfilter = 1;
 	par.conlines = 30;
 	par.zeroout = false;
 	par.plot = true;
+	par.quivVectSca = .1*(par.h/0.05);
+	par.plotoniter = 100;
 	
 	%domain decomposition parameters
 	par.ddrun = false;

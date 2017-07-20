@@ -20,7 +20,7 @@ lx = 1;       % width of box
 ly = 1;       % height of box
 nx = 100;      % number of x-gridpoints
 ny = 100;      % number of y-gridpoints
-nsteps = ceil(tf/dt);  % number of steps with graphic output
+nsteps = 10;%ceil(tf/dt);  % number of steps with graphic output
 %-----------------------------------------------------------------------
 nt = ceil(tf/dt); dt = tf/nt;
 xs = linspace(0,lx,nx-1);

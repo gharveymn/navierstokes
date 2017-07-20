@@ -25,7 +25,7 @@ function figs = InitialPlot(grids,filtering,res,par)
 		figs.f11 = surf(grids.q.inner.Xmesh,grids.q.inner.Ymesh,Q,'edgecolor','none','facecolor','interp');	
 		%quiver
 		[Unew,Vnew] = makeQuiverData(U,V);
-		figs.f12 = quiver3(grids.q.inner.Xmesh,grids.q.inner.Ymesh,max(max(Q))*ones(size(Unew)),Unew,Vnew,zeros(size(Unew)));
+		figs.f12 = quiver3(grids.q.inner.Xmesh,grids.q.inner.Ymesh,max(max(Q))*ones(size(Unew)),Unew,Vnew,zeros(size(Unew)),par.quivVectSca,'k-');
 		axis(ax)
 		title('velocity vector field')
 		hold off
@@ -161,6 +161,7 @@ function figs = Update(grids,filtering,res,par,figs)
 		drawnow;
 		
 	catch ME
+		%throw(ME)
 		disp('Couldn''t update one of the figures; we''ll try to make new ones')
 		figs = InitialPlot(grids,filtering,res,par);
 	end

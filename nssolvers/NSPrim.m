@@ -10,6 +10,14 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 	Ue = zeros([ny+2,nx+1]);
 	Ve = zeros([ny+1,nx+2]);
 	
+	if(par.useGPU)
+		U = gpuArray(U);
+		V = gpuArray(V);
+		Ue = gpuArray(Ue);
+		Ve = gpuArray(Ve);
+	end
+	
+	%inner
 	udbcfull = filtering.u.inner.dbcfull;
 	vdbcfull = filtering.v.inner.dbcfull;
 	pdbcfull = filtering.p.inner.dbcfull;
@@ -33,14 +41,44 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 	Pdbcfull.n = gridify(pdbcfull.n,nx,ny);
 	Pdbcfull.c = gridify(pdbcfull.c,nx,ny);
 	
-	Ubc = reshape(filtering.u.inner.filterMat'*rhs.inner.u,[nx-1,ny])';
-	Ubc(Udbcfull.n) = 2*par.dt/(par.h^2*par.Re)*Ubc(Udbcfull.n);
-	Ubc(Udbcfull.s) = 2*par.dt/(par.h^2*par.Re)*Ubc(Udbcfull.s);
+	%outer
+	udbcfullE = filtering.u.outer.dbcfull;
+	vdbcfullE = filtering.v.outer.dbcfull;
+	%gridify
+	UdbcfullE.w = gridify(udbcfullE.w,nx+1,ny+2);
+	UdbcfullE.e = gridify(udbcfullE.e,nx+1,ny+2);
+	UdbcfullE.s = gridify(udbcfullE.s,nx+1,ny+2);
+	UdbcfullE.n = gridify(udbcfullE.n,nx+1,ny+2);
+	UdbcfullE.c = gridify(udbcfullE.c,nx+1,ny+2);
 	
-	Vbc = reshape(filtering.v.inner.filterMat'*rhs.inner.v*0,[nx,ny-1])';
-	Vbc(Vdbcfull.w) = 2*par.dt/(par.h^2*par.Re)*Vbc(Vdbcfull.w);
-	Vbc(Vdbcfull.e) = 2*par.dt/(par.h^2*par.Re)*Vbc(Vdbcfull.e);
+	VdbcfullE.w = gridify(vdbcfullE.w,nx+2,ny+1);
+	VdbcfullE.e = gridify(vdbcfullE.e,nx+2,ny+1);
+	VdbcfullE.s = gridify(vdbcfullE.s,nx+2,ny+1);
+	VdbcfullE.n = gridify(vdbcfullE.n,nx+2,ny+1);
+	VdbcfullE.c = gridify(vdbcfullE.c,nx+2,ny+1);
 	
+	uselEw = UdbcfullE.w&~(UdbcfullE.s|UdbcfullE.n);
+	uselEe = UdbcfullE.e&~(UdbcfullE.s|UdbcfullE.n);
+	%uselEs = UdbcfullE.s&~(UdbcfullE.w|UdbcfullE.e);
+	%uselEn = UdbcfullE.n&~(UdbcfullE.w|UdbcfullE.e);	
+	
+	%vselEw = VdbcfullE.w&~(VdbcfullE.s|VdbcfullE.n);
+	%vselEe = VdbcfullE.e&~(VdbcfullE.s|VdbcfullE.n);
+	vselEs = VdbcfullE.s&~(VdbcfullE.w|VdbcfullE.e);
+	vselEn = VdbcfullE.n&~(VdbcfullE.w|VdbcfullE.e);
+	
+	%inner boundary cond
+	Urhs = reshape(filtering.u.inner.filterMat'*rhs.inner.u,[nx-1,ny])';
+	Ubc = Urhs;
+	Ubc(Udbcfull.n|Udbcfull.s) = 2*par.dt/(par.h^2*par.Re)*Urhs(Udbcfull.n|Udbcfull.s);
+	Ubc(Udbcfull.w|Udbcfull.e) = par.dt/(par.h^2*par.Re)*Urhs(Udbcfull.w|Udbcfull.e);
+	
+	Vrhs = reshape(filtering.v.inner.filterMat'*rhs.inner.v*0,[nx,ny-1])';
+	Vbc = Vrhs;
+	Vbc(Vdbcfull.w|Vdbcfull.e) = 2*par.dt/(par.h^2*par.Re)*Vrhs(Vdbcfull.w|Vdbcfull.e);
+	Vbc(Vdbcfull.n|Vdbcfull.s) = par.dt/(par.h^2*par.Re)*Vrhs(Vdbcfull.s|Vdbcfull.n);
+	
+	%outer boundary cond
 	Ubcfull = reshape(filtering.u.outer.filterMat'*rhs.outer.u,[nx+1,ny+2])';
 	Vbcfull = reshape(filtering.v.outer.filterMat'*rhs.outer.v*0,[nx+2,ny+1])';
 	
@@ -63,6 +101,13 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 	Lq = filtering.q.inner.filterMat*Lq*filtering.q.inner.filterMat';
 	%perq = symamd(Lq); Rq = chol(Lq(perq,perq)); Rqt = Rq';
 	
+	if(par.useGPU)
+		Lp = gpuArray(Lp);
+		Lu = gpuArray(Lu);
+		Lv = gpuArray(Lv);
+		Lq = gpuArray(Lq);
+	end
+	
 	uValMat = reshape(filtering.u.inner.valind,[nx-1,ny])';
 	uValMatE = [zeros([ny,1]),uValMat,zeros([ny,1])];
 	uValMatE = logical([zeros([1,nx+1]);uValMatE;zeros([1,nx+1])]);
@@ -83,31 +128,18 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 	qValMatE = logical([zeros([1,nx+1]);qValMatE;zeros([1,nx+1])]);
 	qvalindE = reshape(qValMatE',[],1);
 	
-	udbcfullE = filtering.u.outer.dbcfull;
-	vdbcfullE = filtering.v.outer.dbcfull;
-	%gridify
-	UdbcfullE.w = gridify(udbcfullE.w,nx+1,ny+2);
-	UdbcfullE.e = gridify(udbcfullE.e,nx+1,ny+2);
-	UdbcfullE.s = gridify(udbcfullE.s,nx+1,ny+2);
-	UdbcfullE.n = gridify(udbcfullE.n,nx+1,ny+2);
-	UdbcfullE.c = gridify(udbcfullE.c,nx+1,ny+2);
+	Pxsel = circshift(Pdbcfull.w,-1,2)&~circshift(reshape(filtering.p.inner.bciofull,[nx,ny])',-1,2);
+	Pxsel = Pxsel(:,1:end-1);
+	Pysel = Pdbcfull.n|circshift(Pdbcfull.s,-1,1);
+	Pysel = Pysel(1:end-1,:);
 	
-	VdbcfullE.w = gridify(vdbcfullE.w,nx+2,ny+1);
-	VdbcfullE.e = gridify(vdbcfullE.e,nx+2,ny+1);
-	VdbcfullE.s = gridify(vdbcfullE.s,nx+2,ny+1);
-	VdbcfullE.n = gridify(vdbcfullE.n,nx+2,ny+1);
-	VdbcfullE.c = gridify(vdbcfullE.c,nx+2,ny+1);
+	UselinN = circshift(UdbcfullE.n,-1)&~(grids.u.outer.Ymesh == min(grids.u.outer.yinit));
+	UselinS = circshift(UdbcfullE.s,1)&~(grids.u.outer.Ymesh == max(grids.u.outer.yinit));
+	VselinW = circshift(VdbcfullE.w,1,2)&~(grids.v.outer.Xmesh == max(grids.v.outer.xinit));
+	VselinE = circshift(VdbcfullE.e,-1,2)&~(grids.v.outer.Xmesh == min(grids.v.outer.xinit));
 	
-	uselEw = UdbcfullE.w&~(UdbcfullE.s|UdbcfullE.n);
-	uselEe = UdbcfullE.e&~(UdbcfullE.s|UdbcfullE.n);
-	uselEs = UdbcfullE.s&~(UdbcfullE.w|UdbcfullE.e);
-	uselEn = UdbcfullE.n&~(UdbcfullE.w|UdbcfullE.e);	
-	
-	vselEw = VdbcfullE.w&~(VdbcfullE.s|VdbcfullE.n);
-	vselEe = VdbcfullE.e&~(VdbcfullE.s|VdbcfullE.n);
-	vselEs = VdbcfullE.s&~(VdbcfullE.w|VdbcfullE.e);
-	vselEn = VdbcfullE.n&~(VdbcfullE.w|VdbcfullE.e);
-	
+	fprintf('\n')
+	lents = 0;
 	for i=1:par.timesteps
 		
 		%nonlinear terms
@@ -116,14 +148,14 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 		Ue(uValMatE) = U(uValMat);
 		Ue(uselEw) = Ubcfull(uselEw);
 		Ue(uselEe) = Ubcfull(uselEe);
-		Ue(UdbcfullE.n) = 2*Ubcfull(UdbcfullE.n)-Ue(UdbcfullE.n);
-		Ue(UdbcfullE.s) = 2*Ubcfull(UdbcfullE.s)-Ue(UdbcfullE.s);
+		Ue(UdbcfullE.n) = 2*Ubcfull(UdbcfullE.n)-Ue(UselinN);
+		Ue(UdbcfullE.s) = 2*Ubcfull(UdbcfullE.s)-Ue(UselinS);
 		
 		Ve(vValMatE) = V(vValMat);
 		Ve(vselEs) = Vbcfull(vselEs);
 		Ve(vselEn) = Vbcfull(vselEn);
-		Ve(VdbcfullE.w) = 2*Vbcfull(VdbcfullE.w)-Ve(VdbcfullE.w);
-		Ve(VdbcfullE.e) = 2*Vbcfull(VdbcfullE.e)-Ve(VdbcfullE.e);
+		Ve(VdbcfullE.w) = 2*Vbcfull(VdbcfullE.w)-Ve(VselinW);
+		Ve(VdbcfullE.e) = 2*Vbcfull(VdbcfullE.e)-Ve(VselinE);
 		
 		Ua = mvgavg(Ue);
 		Ud = diff(Ue)/2;
@@ -152,12 +184,12 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 		rhs = reshape((U+Ubc)',[],1);
 		rhs = rhs(filtering.u.inner.valind);
 		u = Lu\rhs;
-		U = reshape(filtering.u.inner.filterMat'*u,nx-1,ny)';
+		U = reshape((1*filtering.u.inner.filterMat')*u,nx-1,ny)';
 		
 		rhs = reshape((V+Vbc)',[],1);
 		rhs = rhs(filtering.v.inner.valind);
 		v = Lv\rhs;
-		V = reshape(filtering.v.inner.filterMat'*v,nx,ny-1)';
+		V = reshape((1*filtering.v.inner.filterMat')*v,nx,ny-1)';
 		
 		%pressure correction
 		Uep = Ue;
@@ -172,35 +204,40 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 		
 		rhs = reshape((diff(Uep')'+diff(Vep))'/par.h,[],1);
 		p = -Lp\rhs(filtering.p.inner.valind);
-		P = reshape(filtering.p.inner.filterMat'*p,nx,ny)';
+		P = reshape((1*filtering.p.inner.filterMat')*p,nx,ny)';
 		Px = diff(P')'/par.h;
-		Pxsel = circshift(Pdbcfull.w,-1,2)&~circshift(reshape(filtering.p.inner.bciofull,[nx,ny])',-1,2);
-		Pxsel = Pxsel(:,1:end-1);
-		Px(Pxsel) = 0;
+		%Px(Pxsel) = 0;
 		Py = diff(P)/par.h;
-		Pysel = Pdbcfull.n|circshift(Pdbcfull.s,-1,1);
-		Pysel = Pysel(1:end-1,:);
-		Py(Pysel) = 0;
+		%Py(Pysel) = 0;
 		U = U-Px;
 		V = V-Py;
 		
 		%stream function
 		rhs = reshape((diff(U)-diff(V')')'/par.h,[],1);
 		q = Lq\rhs(filtering.q.inner.valind);
-		Q = reshape(filtering.q.inner.filterMat'*q,nx-1,ny-1)';
+		Q = reshape((1*filtering.q.inner.filterMat')*q,nx-1,ny-1)';
 		
-		res.U = U;
-		res.V = V;
-		res.P = P;
-		res.Q = Q;
+		res.U = gather(U);
+		res.V = gather(V);
+		res.P = gather(P);
+		res.Q = gather(Q);
 		
- 		if(~exist('figs','var'))
- 			figs = PlotNS(grids,filtering,res,par);
- 		else
- 			figs = PlotNS(grids,filtering,res,par,figs);
- 		end
+		if(i==1 || mod(i,par.plotoniter)==0)
+			if(~exist('figs','var'))
+				figs = PlotNS(grids,filtering,res,par);
+			else
+				figs = PlotNS(grids,filtering,res,par,figs);
+			end
+		end
+		
+		
+		
+		timestr = ['Time step: ' num2str(i*par.dt,'%5.2f') '/' num2str(par.tf,'%5.2f') 's'];
+		fprintf([repmat('\b',1,lents) timestr]);
+		lents = numel(timestr);
+		
 	end
-	
+	fprintf('\n');
 end
 
 function M = gridify(v,nx,ny)
