@@ -9,6 +9,9 @@ function par = Parameters
 	addpath('rhfunctions');
 	addpath('maps');
 	addpath('utils');
+	addpath('models');
+	
+	%default parameters
 	
 	%set true to switch to ParametersDebug
 	par.debug = false;
@@ -39,7 +42,7 @@ function par = Parameters
 	par.zeroout = false;
 	par.plot = true;
 	par.quivVectSca = .1*(par.h/0.05);
-	par.plotoniter = 100;
+	par.plotoniter = 1;
 	
 	%domain decomposition parameters
 	par.ddrun = false;
@@ -55,10 +58,13 @@ function par = Parameters
 	par.ddsolver = @DDMSch;
 	par.nssolver = @NSPrim;
 	par.gridmaker = @MakeStaggeredGrids;
+	par.model = @drivcav;
 	
 	if(par.debug)
 		par = ParametersDebug;
 	end
+
+	par = par.model(par);
 	
 end
 
