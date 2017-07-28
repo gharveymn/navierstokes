@@ -22,6 +22,10 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 		ylimcoords((i+1)/2) = data(i+1);
 	end
 	
+	if(xlimcoords(1)~=xlimcoords(end) && ylimcoords(1)~=ylimcoords(end))
+		xlimcoords = vertcat(xlimcoords,xlimcoords(1));
+		ylimcoords = vertcat(ylimcoords,ylimcoords(1));
+	end
 	
 	h = par.h;
 
@@ -37,10 +41,10 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	convex(end) = convex(1);
 	
 	%find where we need to increase/decrease bounds
-	[incx,onincx] = inpoly(horzcat(xlimcoords-h,ylimcoords),horzcat(xlimcoords,ylimcoords),[],h/4);
-	[decx,ondecx] = inpoly(horzcat(xlimcoords+h,ylimcoords),horzcat(xlimcoords,ylimcoords),[],h/4);
-	[incy,onincy] = inpoly(horzcat(xlimcoords,ylimcoords-h),horzcat(xlimcoords,ylimcoords),[],h/4);
-	[decy,ondecy] = inpoly(horzcat(xlimcoords,ylimcoords+h),horzcat(xlimcoords,ylimcoords),[],h/4);
+	[incx,onincx] = inpolygon(xlimcoords-h,ylimcoords,xlimcoords,ylimcoords);
+	[decx,ondecx] = inpolygon(xlimcoords+h,ylimcoords,xlimcoords,ylimcoords);
+	[incy,onincy] = inpolygon(xlimcoords,ylimcoords-h,xlimcoords,ylimcoords);
+	[decy,ondecy] = inpolygon(xlimcoords,ylimcoords+h,xlimcoords,ylimcoords);
 	
 	incx = incx&(~onincx|convex);
 	decx = decx&(~ondecx|convex);
@@ -174,7 +178,7 @@ function [grids,filtering] = createGridsInner(xinit,yinit,nx,ny,xlimcoords,ylimc
 	ymeshfull = kron(yinit,ones(nx,1));
 	
 	%Credit to Darren Engwirda for inpoly
-	[valind,onfull] = inpoly(horzcat(xmeshfull,ymeshfull),horzcat(xlimcoords,ylimcoords),[],h/4);
+	[valind,onfull] = inpolygon(xmeshfull,ymeshfull,xlimcoords,ylimcoords);
 	
 	filterMat = spdiag(valind);
 	filterMat = filterMat(valind,:);
@@ -217,7 +221,7 @@ function [grids,filtering] = createGridsOuter(xinit,yinit,nx,ny,xlimcoords,ylimc
 	ymeshfull = kron(yinit,ones(nx,1));
 	
 	%Credit to Darren Engwirda for inpoly
-	[valind,onfull] = inpoly(horzcat(xmeshfull,ymeshfull),horzcat(xlimcoords,ylimcoords),[],h/4);
+	[valind,onfull] = inpolygon(xmeshfull,ymeshfull,xlimcoords,ylimcoords);
 	
 	% badcorners =		(effeq(xmeshfull,xlimcoords(1)) & effeq(ymeshfull,ylimcoords(1)))...
 	% 			|	(effeq(xmeshfull,xlimcoords(2)) & effeq(ymeshfull,ylimcoords(2)))...

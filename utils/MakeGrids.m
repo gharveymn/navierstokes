@@ -20,109 +20,151 @@ function [grids,filtering,par] = MakeGrids(par)
 		ylimcoords((i+1)/2) = data(i+1);
 	end
 	
-	%make dd bounds (if needed)
-	if(par.ddrun)
-		par.ddbounds{1}{1}(1) = xlimcoords(1);
-		par.ddbounds{1}{2}(1) = xlimcoords(3) + par.ddoverlap;
-		par.ddbounds{1}{1}(2) = ylimcoords(1);
-		par.ddbounds{1}{2}(2) = ylimcoords(3);
-		
-		par.ddbounds{2}{1}(1) = xlimcoords(4);
-		par.ddbounds{2}{2}(1) = par.h*round(1/par.h*(par.ddmidratio*xlimcoords(5)...
-			+(1-par.ddmidratio)*xlimcoords(4))) + par.ddoverlap;
-		par.ddbounds{2}{1}(2) = ylimcoords(7);
-		par.ddbounds{2}{2}(2) = ylimcoords(4);
-		
-		par.ddbounds{3}{1}(1) = par.ddbounds{2}{2}(1) - par.ddoverlap;
-		par.ddbounds{3}{2}(1) = xlimcoords(5);
-		par.ddbounds{3}{1}(2) = ylimcoords(6);
-		par.ddbounds{3}{2}(2) = ylimcoords(5);
-	end
-	
-	%make grid
+	h = par.h;
+
 	limits = [min(xlimcoords),max(xlimcoords),min(ylimcoords),max(ylimcoords)];
-	xinit = (limits(1):par.h:limits(2))';
-	yinit = (limits(3):par.h:limits(4))';
-	nxp1 = numel(xinit);
-	nyp1 = numel(yinit);
-	xmeshfull = kron(ones(nyp1,1),xinit);
-	ymeshfull = kron(yinit,ones(nxp1,1));
+	par.nx = (limits(2)-limits(1))/h;
+	par.ny = (limits(4)-limits(3))/h;
+	par.nxp1 = par.nx+1;
+	par.nyp1 = par.ny+1;
+	
+	c = convhull(xlimcoords,ylimcoords);
+	convex = zeros(numel(xlimcoords),1);
+	convex(c) = 1;
+	convex(end) = convex(1);
+	
+	%find where we need to increase/decrease bounds
+	[incx,onincx] = inpoly(horzcat(xlimcoords-h,ylimcoords),horzcat(xlimcoords,ylimcoords),[],h/4);
+	[decx,ondecx] = inpoly(horzcat(xlimcoords+h,ylimcoords),horzcat(xlimcoords,ylimcoords),[],h/4);
+	[incy,onincy] = inpoly(horzcat(xlimcoords,ylimcoords-h),horzcat(xlimcoords,ylimcoords),[],h/4);
+	[decy,ondecy] = inpoly(horzcat(xlimcoords,ylimcoords+h),horzcat(xlimcoords,ylimcoords),[],h/4);
+	
+	incx = incx&(~onincx|convex);
+	decx = decx&(~ondecx|convex);
+	incy = incy&(~onincy|convex);
+	decy = decy&(~ondecy|convex);
+	
+	%Q
+	%------------------------------------------------
+	
+	%make streamfunction grid
+	%inner
+	qxinit = (limits(1)+h:par.h:limits(2)-h)';
+	qyinit = (limits(3)+h:par.h:limits(4)-h)';
+	nxm1 = numel(qxinit);
+	nym1 = numel(qyinit);
+	
+	qxlimcoords = xlimcoords - h*incx + h*decx;
+	qylimcoords = ylimcoords - h*incy + h*decy;
+	[grids,filtering] = createGridsInner(qxinit,qyinit,nxm1,nym1,qxlimcoords,qylimcoords,h,par);
+
+	%outer
+	qxinit = (limits(1):par.h:limits(2))';
+	qyinit = (limits(3):par.h:limits(4))';
+	nxp1 = numel(qxinit);
+	nyp1 = numel(qyinit);
+	[grids,filtering] = createGridsOuter(qxinit,qyinit,nxp1,nyp1,xlimcoords,ylimcoords,h,grids,filtering,par);
+	
+	
+	fclose('all');
+end
+
+function [grids,filtering] = createGridsInner(xinit,yinit,nx,ny,xlimcoords,ylimcoords,h,par)
+	xmeshfull = kron(ones(ny,1),xinit);
+	ymeshfull = kron(yinit,ones(nx,1));
 	
 	%Credit to Darren Engwirda for inpoly
-	[valind,onfull] = inpoly(horzcat(xmeshfull,ymeshfull),horzcat(xlimcoords,ylimcoords));
+	[valind,onfull] = inpoly(horzcat(xmeshfull,ymeshfull),horzcat(xlimcoords,ylimcoords),[],h/4);
 	
 	filterMat = spdiag(valind);
 	filterMat = filterMat(valind,:);
 	
 	on = onfull(valind);
 	
-	Xmesh = reshape(xmeshfull./valind,[nxp1,nyp1])';
-	Ymesh = reshape(ymeshfull./valind,[nxp1,nyp1])';
+	Xmesh = reshape(xmeshfull./valind,[nx,ny])';
+	Ymesh = reshape(ymeshfull./valind,[nx,ny])';
 	
 	xmesh = filterMat*xmeshfull;
 	ymesh = filterMat*ymeshfull;
+	
+	inner.xinit = xinit;
+	inner.yinit = yinit;
+	inner.xmesh = xmesh;
+	inner.ymesh = ymesh;
+	inner.Xmesh = Xmesh;
+	inner.Ymesh = Ymesh;
+	inner.xmeshfull = xmeshfull;
+	inner.ymeshfull = ymeshfull;
+	grids.inner = inner;
+	grids.h = h;
+	
+	finner.filterMat = filterMat;
+	finner.valind = valind;
+	finner.on = on;
+	finner.onfull = onfull;
+	filtering.inner = finner;
+	
+	[dbc,dbcfull] = boundarysides(grids,filtering,par,'inner',nx);
+	
+	filtering.inner.dbc = dbc;
+	filtering.inner.dbcfull = dbcfull;
+	filtering.inner.gp = [];
 
-	grids.inner.xinit = xinit;
-	grids.inner.yinit = yinit;
-	grids.inner.xmesh = xmesh;
-	grids.inner.ymesh = ymesh;
-	grids.inner.Xmesh = Xmesh;
-	grids.inner.Ymesh = Ymesh;
-	grids.inner.xmeshfull = xmeshfull;
-	grids.inner.ymeshfull = ymeshfull;
-	grids.nxp1 = nxp1;
-	grids.nyp1 = nyp1;
-	grids.nx = nxp1-1;
-	grids.ny = nyp1-1;
-	grids.nxm1 = nxp1-2;
-	grids.nym1 = nyp1-2;
-	grids.h = par.h;
+end
+
+function [grids,filtering] = createGridsOuter(xinit,yinit,nx,ny,xlimcoords,ylimcoords,h,grids,filtering,par)
+	xmeshfull = kron(ones(ny,1),xinit);
+	ymeshfull = kron(yinit,ones(nx,1));
 	
-	filtering.filterMat= filterMat;
-	filtering.valindinner = valind;
-	filtering.valindouter = valind;
-	filtering.on = on;
-	filtering.onfull = onfull;
+	%Credit to Darren Engwirda for inpoly
+	[valind,onfull] = inpoly(horzcat(xmeshfull,ymeshfull),horzcat(xlimcoords,ylimcoords),[],h/4);
 	
-	[dbc,dbcfull] = boundarysides(grids,filtering);
+	% badcorners =		(effeq(xmeshfull,xlimcoords(1)) & effeq(ymeshfull,ylimcoords(1)))...
+	% 			|	(effeq(xmeshfull,xlimcoords(2)) & effeq(ymeshfull,ylimcoords(2)))...
+	% 			|	(effeq(xmeshfull,xlimcoords(4)) & effeq(ymeshfull,ylimcoords(4)))...
+	% 			|	(effeq(xmeshfull,xlimcoords(5)) & effeq(ymeshfull,ylimcoords(5)))...
+	% 			|	(effeq(xmeshfull,xlimcoords(6)) & effeq(ymeshfull,ylimcoords(6)))...
+	% 			|	(effeq(xmeshfull,xlimcoords(7)) & effeq(ymeshfull,ylimcoords(7)))...
+	% 			|	(effeq(xmeshfull,xlimcoords(9)) & effeq(ymeshfull,ylimcoords(9)));
 	
-	filtering.dbc = dbc;
-	filtering.dbcfull = dbcfull;
-	filtering.gp = [];
+	% if(~qflag)
+	% 	valind = valind & ~badcorners;
+	% 	onfull = onfull & ~badcorners;
+	% end
 	
-	%we're going to hard set a max of 3 for now, otherwise it gets needlessly complex.
-	if(par.ghostpoints)
-		switch par.order
-			case 1
-				%do nothing
-			case 2
-				[gp1,grids,filtering] = closure(grids,filtering);
-				filtering.gp = {gp1};
-			case 3
-				[gp1,grids,filtering] = closure(grids,filtering);
-				[gp2,grids,filtering,gp1] = closure(grids,filtering,'outer',gp1,gp1);
-				filtering.gp = {gp1,gp2}; 
-			otherwise
-				ME = MException('closure:invalidParameterException','Invalid value for par.order');
-				throw(ME)
-		end
-			
-	end
+	filterMat = spdiag(valind);
+	filterMat = filterMat(valind,:);
 	
-	%NOTE: filtering{4} ie {bc,bcfull} will change to become 2x2 dimensional
-	%		this is a hack because I really do not want to touch closure since that is also a hack
+	on = onfull(valind);
 	
-	%we did some arithmetic up there so just
-	%make sure ddbounds are actually in the grids
-	[~,in] = min(abs(xinit-par.ddbounds{1}{2}(1)));
-	par.ddbounds{1}{2}(1) = xinit(in);
+	Xmesh = reshape(xmeshfull./valind,[nx,ny])';
+	Ymesh = reshape(ymeshfull./valind,[nx,ny])';
 	
-	[~,in] = min(abs(xinit-par.ddbounds{2}{2}(1)));
-	par.ddbounds{2}{2}(1) = xinit(in);
+	xmesh = filterMat*xmeshfull;
+	ymesh = filterMat*ymeshfull;
 	
-	[~,in] = min(abs(xinit-par.ddbounds{3}{1}(1)));
-	par.ddbounds{3}{1}(1) = xinit(in);
+	outer.xinit = xinit;
+	outer.yinit = yinit;
+	outer.xmesh = xmesh;
+	outer.ymesh = ymesh;
+	outer.Xmesh = Xmesh;
+	outer.Ymesh = Ymesh;
+	outer.xmeshfull = xmeshfull;
+	outer.ymeshfull = ymeshfull;
+	grids.outer = outer;
+
+	grids.h = h;
 	
+	fouter.filterMat = filterMat;
+	fouter.valind = valind;
+	fouter.on = on;
+	fouter.onfull = onfull;
+	filtering.outer = fouter;
 	
-	fclose('all');
+	[dbc,dbcfull] = boundarysides(grids,filtering,par,'outer',nx);
+	
+	filtering.outer.dbc = dbc;
+	filtering.outer.dbcfull = dbcfull;
+	filtering.outer.gp = [];
+
 end

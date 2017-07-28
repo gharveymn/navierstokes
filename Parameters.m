@@ -25,14 +25,14 @@ function par = Parameters
 	par.streamfunction = true;
 	par.order = 2;
 	par.dt = 0.01;
-	par.tf = 40;
-	par.timesteps = round(par.tf/par.dt);
+	par.tf = 200;
 	par.usestagger = true;
 	
 	%flow parameters
 	par.inflowAmp = 1;
 	par.nu = 1;							%kinematic viscosity
 	par.Re = 1e2;							%default value
+	par.omega = 0.5;
 	
 	%plotting parameters
 	par.toPlot = 1;						%1==normal, 2==debug
@@ -42,7 +42,9 @@ function par = Parameters
 	par.zeroout = false;
 	par.plot = true;
 	par.quivVectSca = .1*(par.h/0.05);
-	par.plotoniter = 1;
+	par.plotoniter = 100;
+	par.noplot = false;
+	
 	
 	%domain decomposition parameters
 	par.ddrun = false;
@@ -58,13 +60,17 @@ function par = Parameters
 	par.ddsolver = @DDMSch;
 	par.nssolver = @NSPrim;
 	par.gridmaker = @MakeStaggeredGrids;
-	par.model = @drivcav;
+	par.model = @symchlong;
+	
 	
 	if(par.debug)
 		par = ParametersDebug;
 	end
 
 	par = par.model(par);
+	
+	par.timesteps = round(par.tf/par.dt);
+	
 	
 end
 

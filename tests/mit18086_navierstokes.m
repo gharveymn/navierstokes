@@ -21,6 +21,7 @@ ly = 1;       % height of box
 nx = 90;      % number of x-gridpoints
 ny = 90;      % number of y-gridpoints
 nsteps = 10;  % number of steps with graphic output
+clear u v p q;
 %-----------------------------------------------------------------------
 nt = ceil(tf/dt); dt = tf/nt;
 x = linspace(0,lx,nx+1); hx = lx/nx;

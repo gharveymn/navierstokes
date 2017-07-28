@@ -1,31 +1,51 @@
-function [rhs,bcio] = BCSymChNS(grids,filtering,rhs,par)
+function [rhs,bcio] = BCDrivCav(grids,filtering,rhs,par,grid)
+	
+	switch grid
+		case 'u'
+			[rhs,bcio] = bcu(grids,filtering,rhs,par);
+		case 'v'
+			[rhs,bcio] = bcv(grids,filtering,rhs,par);
+		case 'p'
+			[rhs,bcio] = bcp(grids,filtering,rhs,par);
+		case 'q'
+			[rhs,bcio] = bcq(grids,filtering,rhs,par);
+		otherwise
+			ME = MException('bcsymchns:invalidParameterException','Invalid value for grid');
+			throw(ME)
+	end
+		
+end
+
+function [rhs,bcio] = bcu(grids,filtering,rhs,par)
 	
 	flowrate = 1;
 	
-	xmesh = grids.xmesh;
-	ymesh = grids.ymesh;
-	nxp1 = par.nxp1;
-	valind = filtering.valind;
-	
 	on = filtering.on;
-	onfull = filtering.onfull;
-	dbcfull = filtering.dbcfull;
-	gpca = filtering.gp;
-	
-	h = par.h;
-	
-	xmax = max(xmesh(on));
-	xmin = min(xmesh(on));
-	ymax = max(ymesh(on));
-	ymin = min(ymesh(on));
+	ymax = max(grids.ymesh(on));
 	
 	% driven flow
 	drivy = ymax*ones(numel(on),1);
 	in = ones(numel(on),flowrate);
-	in(~(ymesh==drivy)) = 0;
+	in(~(grids.ymesh==drivy)) = 0;
 	
 	rhs = rhs + in;
 	
+	bcio = on&~on;
+	
+end
+
+function [rhs,bcio] = bcv(grids,filtering,rhs,par)
+	on = filtering.on;
+	bcio = on&~on;
+end
+
+function [rhs,bcio] = bcp(grids,filtering,rhs,par)
+	on = filtering.on;
+	bcio = on&~on;
+end
+
+function [rhs,bcio] = bcq(grids,filtering,rhs,par)
+	on = filtering.on;
 	bcio = on&~on;
 end
 
