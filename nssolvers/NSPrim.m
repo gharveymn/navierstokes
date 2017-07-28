@@ -3,7 +3,8 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 	
 	nx = grids.p.nx;
 	ny = grids.p.ny;
-	h = par.h;
+	hx = par.hx;
+	hy = par.hy;
 	
 	U = zeros([ny,nx-1]);
 	V = zeros([ny-1,nx]);
@@ -91,22 +92,22 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 	QUbcE = 0*reshape(filtering.q.outer.filterMat'*rhs.outer.q,[nx+1,ny+1])';
 	QVbcE = QUbcE;
 	
-	Lp = laplacian2(nx,ny,h,1,1,1,1,pdbcfull.w|pdbcfull.e,pdbcfull.s|pdbcfull.n,filtering.p.inner.bciofull,-1);
+	Lp = laplacian2(nx,ny,hx,hy,1,1,1,1,pdbcfull.w|pdbcfull.e,pdbcfull.s|pdbcfull.n,filtering.p.inner.bciofull,-1);
 	Lp = filtering.p.inner.filterMat*Lp*filtering.p.inner.filterMat';
 	Lp(1,1) = 3/2*Lp(1,1);
 	%perp = symamd(Lp); Rp = chol(Lp(perp,perp)); Rpt = Rp';
 	
-	Lu = laplacian2(nx-1,ny,h,2,3,2,1,udbcfull.w|udbcfull.e,udbcfull.s|udbcfull.n,filtering.u.inner.bciofull,-1);
+	Lu = laplacian2(nx-1,ny,hx,hy,2,3,2,1,udbcfull.w|udbcfull.e,udbcfull.s|udbcfull.n,filtering.u.inner.bciofull,-1);
 	Lu = par.dt/par.Re*Lu + speye(size(Lu,1));
 	Lu = filtering.u.inner.filterMat*Lu*filtering.u.inner.filterMat';
 	%peru = symamd(Lu); Ru = chol(Lu(peru,peru)); Rut = Ru';
 	
-	Lv = laplacian2(nx,ny-1,h,3,2,3,1,vdbcfull.w|vdbcfull.e,vdbcfull.s|vdbcfull.n,filtering.v.inner.bciofull,-1);
+	Lv = laplacian2(nx,ny-1,hx,hy,3,2,3,1,vdbcfull.w|vdbcfull.e,vdbcfull.s|vdbcfull.n,filtering.v.inner.bciofull,-1);
 	Lv = par.dt/par.Re*Lv + speye(size(Lv,1));
 	Lv = filtering.v.inner.filterMat*Lv*filtering.v.inner.filterMat';
 	%perv = symamd(Lv); Rv = chol(Lv(perv,perv)); Rvt = Rv';
 	
-	Lq = laplacian2(nx-1,ny-1,h,2,2,2,1,qdbcfull.w|qdbcfull.e,qdbcfull.s|qdbcfull.n,filtering.q.inner.bciofull,-1);
+	Lq = laplacian2(nx-1,ny-1,hx,hy,2,2,2,1,qdbcfull.w|qdbcfull.e,qdbcfull.s|qdbcfull.n,filtering.q.inner.bciofull,-1);
 	Lq = filtering.q.inner.filterMat*Lq*filtering.q.inner.filterMat';
 	%perq = symamd(Lq); Rq = chol(Lq(perq,perq)); Rqt = Rq';
 	
@@ -155,7 +156,7 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 	for i=1:par.timesteps
 		
 		% nonlinear terms/explicit convection
-		gamma = min(1.2*par.dt*max(max(max(abs(U)))/par.h,max(max(abs(V)))/par.h),1);
+		gamma = min(1.2*par.dt*max(max(max(abs(U)))/hx,max(max(abs(V)))/hy),1);
 		
 		Ue(uValMatE) = U(uValMat);
 		Ue(uselEw) = UbcE(uselEw);
@@ -173,8 +174,8 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 		Ud = diff(Ue)/2;
 		Va = mvgavg(Ve,2);
 		Vd = diff(Ve')'/2;
-		UVx = diff((Ua.*Va-gamma*abs(Ua).*Vd)')'/h;
-		UVy = diff((Ua.*Va-gamma*Ud.*abs(Va)))/h;
+		UVx = diff((Ua.*Va-gamma*abs(Ua).*Vd)')'/hx;
+		UVy = diff((Ua.*Va-gamma*Ud.*abs(Va)))/hy;
 		
 		UVx(VdbcfullE.w(:,2:end-1)|VdbcfullE.e(:,2:end-1)|~uvysel(:,2:end-1)) = 0;
 		UVy(UdbcfullE.s(2:end-1,:)|UdbcfullE.n(2:end-1,:)|~uvxsel(2:end-1,:)) = 0;
@@ -189,8 +190,8 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 		Ud = diff(Ue2')'/2;
 		Va = mvgavg(Ve2);
 		Vd = diff(Ve2)/2;
-		U2x = diff((Ua.^2-gamma*abs(Ua).*Ud)')'/par.h;
-		V2y = diff((Va.^2-gamma*abs(Va).*Vd))/par.h;
+		U2x = diff((Ua.^2-gamma*abs(Ua).*Ud)')'/hx;
+		V2y = diff((Va.^2-gamma*abs(Va).*Vd))/hy;
 		
 		U = U-par.dt*(UVy(:,2:end-1)+U2x);
 		V = V-par.dt*(UVx(2:end-1,:)+V2y);
@@ -217,12 +218,12 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 		Vep(VdbcfullE.w|VdbcfullE.e) = 0;
 		Vep = Vep(:,2:end-1);
 		
-		rhsp = reshape((diff(Uep')'+diff(Vep))'/par.h,[],1);
+		rhsp = reshape((diff(Uep')'/hx+diff(Vep)/hy)',[],1);
 		p = -Lp\rhsp(filtering.p.inner.valind);
 		P = reshape((1*filtering.p.inner.filterMat')*p,nx,ny)';
-		Px = diff(P')'/par.h;
+		Px = diff(P')'/hx;
 		%Px(Pxsel) = 0;
-		Py = diff(P)/par.h;
+		Py = diff(P)/hy;
 		%Py(Pysel) = 0;
 		U = U-Px;
 		V = V-Py;
@@ -242,7 +243,7 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 		if((i==1 || mod(i,par.plotoniter)==0)&&~par.noplot)
 			
 			%stream function
-			rhsq = reshape((diff(U)-diff(V')')'/par.h,[],1);
+			rhsq = reshape((diff(U)/hy-diff(V')'/hx)',[],1);
 			%rhsq(filtering.q.inner.onfull) = rhs.inner.q(filtering.q.inner.on);
 			q = Lq\rhsq(filtering.q.inner.valind);
 			Q = reshape((1*filtering.q.inner.filterMat')*q,nx-1,ny-1)';

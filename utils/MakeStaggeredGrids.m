@@ -28,12 +28,14 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	end
 	
 	h = par.h;
+	hx = par.hx;
+	hy = par.hy;
 
 	limits = [min(xlimcoords),max(xlimcoords),min(ylimcoords),max(ylimcoords)];
-	par.nx = (limits(2)-limits(1))/h;
-	par.ny = (limits(4)-limits(3))/h;
-	par.nxp1 = par.nx+1;
-	par.nyp1 = par.ny+1;
+	nx = (limits(2)-limits(1))/hx;
+	ny = (limits(4)-limits(3))/hy;
+	par.nx = nx;
+	par.ny = ny;
 	
 	c = convhull(xlimcoords,ylimcoords);
 	convex = zeros(numel(xlimcoords),1);
@@ -41,10 +43,10 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	convex(end) = convex(1);
 	
 	%find where we need to increase/decrease bounds
-	[incx,onincx] = inpolygon(round((xlimcoords-h)/h),round(ylimcoords/h),round(xlimcoords/h),round(ylimcoords/h));
-	[decx,ondecx] = inpolygon(round((xlimcoords+h)/h),round(ylimcoords/h),round(xlimcoords/h),round(ylimcoords/h));
-	[incy,onincy] = inpolygon(round(xlimcoords/h),round((ylimcoords-h)/h),round(xlimcoords/h),round(ylimcoords/h));
-	[decy,ondecy] = inpolygon(round(xlimcoords/h),round((ylimcoords+h)/h),round(xlimcoords/h),round(ylimcoords/h));
+	[incx,onincx] = inpolygon(round((xlimcoords-hx)/hx),round(ylimcoords/hy),round(xlimcoords/hx),round(ylimcoords/hy));
+	[decx,ondecx] = inpolygon(round((xlimcoords+hx)/hx),round(ylimcoords/hy),round(xlimcoords/hx),round(ylimcoords/hy));
+	[incy,onincy] = inpolygon(round(xlimcoords/hx),round((ylimcoords-hy)/hy),round(xlimcoords/hx),round(ylimcoords/hy));
+	[decy,ondecy] = inpolygon(round(xlimcoords/hx),round((ylimcoords+hy)/hy),round(xlimcoords/hx),round(ylimcoords/hy));
 	
 	incx = incx&(~onincx|convex);
 	decx = decx&(~ondecx|convex);
@@ -56,87 +58,54 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	
 	%make streamfunction grid
 	%inner
-	qxinit = (limits(1)+h:par.h:limits(2)-h)';
-	qyinit = (limits(3)+h:par.h:limits(4)-h)';
-	nxm1 = numel(qxinit);
-	nym1 = numel(qyinit);
-	
-	qxlimcoords = xlimcoords - h*incx + h*decx;
-	qylimcoords = ylimcoords - h*incy + h*decy;
-	[qgrids,qfiltering] = createGrids(qxinit,qyinit,nxm1,nym1,qxlimcoords,qylimcoords,h,par,'inner');	
+	qxlimcoords = xlimcoords - hx*incx + hx*decx;
+	qylimcoords = ylimcoords - hy*incy + hy*decy;
+	[qgrids,qfiltering] = createGrids(limits(1)+hx,limits(2)-hx,limits(3)+hy,limits(4)-hy,nx-1,ny-1,qxlimcoords,qylimcoords,hx,hy,par,'inner');	
 
 	%outer
-	qxinit = (limits(1):par.h:limits(2))';
-	qyinit = (limits(3):par.h:limits(4))';
-	nxp1 = numel(qxinit);
-	nyp1 = numel(qyinit);
-	[qgrids,qfiltering] = createGrids(qxinit,qyinit,nxp1,nyp1,xlimcoords,ylimcoords,h,par,'outer',qgrids,qfiltering);	
+	[qgrids,qfiltering] = createGrids(limits(1),limits(2),limits(3),limits(4),nx+1,ny+1,xlimcoords,ylimcoords,hx,hy,par,'outer',qgrids,qfiltering);	
 	
 	%P
 	%------------------------------------------------
 
 	%make pressure grids at cell centers
 	%inner
-	pxinit = (limits(1)+h/2:par.h:limits(2)-h/2)';
-	pyinit = (limits(3)+h/2:par.h:limits(4)-h/2)';
-	nx = numel(pxinit);
-	ny = numel(pyinit);
-	pxlimcoords = xlimcoords - h/2*incx + h/2*decx;
-	pylimcoords = ylimcoords - h/2*incy + h/2*decy;
-	[pgrids,pfiltering] = createGrids(pxinit,pyinit,nx,ny,pxlimcoords,pylimcoords,h,par,'inner');
+	pxlimcoords = xlimcoords - hx/2*incx + hx/2*decx;
+	pylimcoords = ylimcoords - hy/2*incy + hy/2*decy;
+	[pgrids,pfiltering] = createGrids(limits(1)+hx/2,limits(2)-hx/2,limits(3)+hy/2,limits(4)-hy/2,nx,ny,pxlimcoords,pylimcoords,hx,hy,par,'inner');
 
 	%outer
-	pxinit = (limits(1)-h/2:par.h:limits(2)+h/2)';
-	pyinit = (limits(3)-h/2:par.h:limits(4)+h/2)';
-	nxp2 = numel(pxinit);
-	nyp2 = numel(pyinit);
-	pxlimcoords = xlimcoords + h/2*incx - h/2*decx;
-	pylimcoords = ylimcoords + h/2*incy - h/2*decy;
-	[pgrids,pfiltering] = createGrids(pxinit,pyinit,nxp2,nyp2,pxlimcoords,pylimcoords,h,par,'outer',pgrids,pfiltering);	
+	pxlimcoords = xlimcoords + hx/2*incx - hx/2*decx;
+	pylimcoords = ylimcoords + hy/2*incy - hy/2*decy;
+	[pgrids,pfiltering] = createGrids(limits(1)-hx/2,limits(2)+hx/2,limits(3)-hy/2,limits(4)+hy/2,nx+2,ny+2,pxlimcoords,pylimcoords,hx,hy,par,'outer',pgrids,pfiltering);	
 
 	%U
 	%------------------------------------------------
 
 	%make u velocity grid offset in the y direction
 	%inner
-	uxinit = (limits(1)+h:par.h:limits(2)-h)';
-	uyinit = (limits(3)+h/2:par.h:limits(4)-h/2)';
-	nxm1 = numel(uxinit);
-	ny = numel(uyinit);
-	uxlimcoords = xlimcoords - h*incx + h*decx;
-	uylimcoords = ylimcoords - h/2*incy + h/2*decy;
-	[ugrids,ufiltering] = createGrids(uxinit,uyinit,nxm1,ny,uxlimcoords,uylimcoords,h,par,'inner');
+	uxlimcoords = xlimcoords - hx*incx + hx*decx;
+	uylimcoords = ylimcoords - hy/2*incy + hy/2*decy;
+	[ugrids,ufiltering] = createGrids(limits(1)+hx,limits(2)-hx,limits(3)+hy/2,limits(4)-hy/2,nx-1,ny,uxlimcoords,uylimcoords,hx,hy,par,'inner');
 
 	%outer
-	uxinit = (limits(1):par.h:limits(2))';
-	uyinit = (limits(3)-h/2:par.h:limits(4)+h/2)';
-	nxp1 = numel(uxinit);
-	nyp2 = numel(uyinit);
 	uxlimcoords = xlimcoords;
-	uylimcoords = ylimcoords + h/2*incy - h/2*decy;	
-	[ugrids,ufiltering] = createGrids(uxinit,uyinit,nxp1,nyp2,uxlimcoords,uylimcoords,h,par,'outer',ugrids,ufiltering);	
+	uylimcoords = ylimcoords + hy/2*incy - hy/2*decy;	
+	[ugrids,ufiltering] = createGrids(limits(1),limits(2),limits(3)-hy/2,limits(4)+hy/2,nx+1,ny+2,uxlimcoords,uylimcoords,hx,hy,par,'outer',ugrids,ufiltering);	
 	
 	%V
 	%------------------------------------------------
 
 	%make v velocity grid offset in the x direction
 	%inner
-	vxinit = (limits(1)+h/2:par.h:limits(2)-h/2)';
-	vyinit = (limits(3)+h:par.h:limits(4)-h)';
-	nx = numel(vxinit);
-	nym1 = numel(vyinit);
-	vxlimcoords = xlimcoords - h/2*incx + h/2*decx;
-	vylimcoords = ylimcoords - h*incy + h*decy;
-	[vgrids,vfiltering] = createGrids(vxinit,vyinit,nx,nym1,vxlimcoords,vylimcoords,h,par,'inner');	
+	vxlimcoords = xlimcoords - hx/2*incx + hx/2*decx;
+	vylimcoords = ylimcoords - hy*incy + hy*decy;
+	[vgrids,vfiltering] = createGrids(limits(1)+hx/2,limits(2)-hx/2,limits(3)+hy,limits(4)-hy,nx,ny-1,vxlimcoords,vylimcoords,hx,hy,par,'inner');	
 
 	%outer
-	vxinit = (limits(1)-h/2:par.h:limits(2)+h/2)';
-	vyinit = (limits(3):par.h:limits(4))';
-	nxp2 = numel(vxinit);
-	nyp1 = numel(vyinit);
-	vxlimcoords = xlimcoords + h/2*incx - h/2*decx;
+	vxlimcoords = xlimcoords + hx/2*incx - hx/2*decx;
 	vylimcoords = ylimcoords;
-	[vgrids,vfiltering] = createGrids(vxinit,vyinit,nxp2,nyp1,vxlimcoords,vylimcoords,h,par,'outer',vgrids,vfiltering);
+	[vgrids,vfiltering] = createGrids(limits(1)-hx/2,limits(2)+hx/2,limits(3),limits(4),nx+2,ny+1,vxlimcoords,vylimcoords,hx,hy,par,'outer',vgrids,vfiltering);
 	
 	grids.p = pgrids;
 	grids.u = ugrids;
@@ -156,11 +125,20 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	fclose('all');
 end
 
-function [grids,filtering] = createGrids(xinit,yinit,nx,ny,xlimcoords,ylimcoords,h,par,side,grids,filtering)
+function [grids,filtering] = createGrids(x1,x2,y1,y2,nx,ny,xlimcoords,ylimcoords,hx,hy,par,side,grids,filtering)
+	
+	xinit = linspace(x1,x2,nx)';
+	yinit = linspace(y1,y2,ny)';
+	
 	xmeshfull = kron(ones(ny,1),xinit);
 	ymeshfull = kron(yinit,ones(nx,1));
 	
-	[valind,onfull] = inpolygon(round(2*xmeshfull/h),round(2*ymeshfull/h),round(2*xlimcoords/h),round(2*ylimcoords/h));
+	a = round(2*xmeshfull/hx);
+	b = round(2*ymeshfull/hy);
+	c = round(2*xlimcoords/hx);
+	d = round(2*ylimcoords/hy);
+	
+	[valind,onfull] = inpolygon(round(2*xmeshfull/hx),round(2*ymeshfull/hy),round(2*xlimcoords/hx),round(2*ylimcoords/hy));
 	
 	filterMat = spdiag(valind);
 	filterMat = filterMat(valind,:);
@@ -182,7 +160,6 @@ function [grids,filtering] = createGrids(xinit,yinit,nx,ny,xlimcoords,ylimcoords
 	g.xmeshfull = xmeshfull;
 	g.ymeshfull = ymeshfull;
 	grids.(side) = g;
-	grids.h = h;
 	
 	f.filterMat = filterMat;
 	f.valind = valind;
