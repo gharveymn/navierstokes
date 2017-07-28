@@ -28,7 +28,7 @@ function figs = InitialPlot(grids,filtering,res,par)
 		%surf
 		figs.f11 = surf(grids.q.inner.Xmesh,grids.q.inner.Ymesh,Q,'edgecolor','none','facecolor','interp');
 		%quiver
-		figs.f12 = quiver3(grids.q.outer.Xmesh,grids.q.outer.Ymesh,max(max(Q))*ones(size(Unew)),Unew,Vnew,zeros(size(Unew)),par.quivVectSca,'k-');
+		figs.f12 = quiver3(grids.q.outer.Xmesh,grids.q.outer.Ymesh,max(max(Q))*ones(size(Unew)),Unew,Vnew,zeros(size(Unew)),par.quivVectSca,'k-','LineWidth',0.25,'ShowArrowHead','off');
 		axis(ax)
 		title('velocity vector field')
 		hold off
@@ -97,7 +97,7 @@ function figs = InitialPlot(grids,filtering,res,par)
 		%surf
 		figs.f11 = surf(grids.q.inner.Xmesh,grids.q.inner.Ymesh,Q,'edgecolor','none','facecolor','interp');
 		%quiver
-		figs.f12 = quiver3(grids.q.outer.Xmesh,grids.q.outer.Ymesh,max(max(Q))*ones(size(Unew)),Unew,Vnew,zeros(size(Unew)),par.quivVectSca,'k-','LineWidth',0.25);
+		figs.f12 = quiver3(grids.q.outer.Xmesh,grids.q.outer.Ymesh,max(max(Q))*ones(size(Unew)),Unew,Vnew,zeros(size(Unew)),par.quivVectSca,'k-','LineWidth',0.25,'ShowArrowHead','off');
 		%contour
 		[C13,h13] = contour3(grids.q.inner.Xmesh,grids.q.inner.Ymesh,Q,par.conlines,'k-');
 		figs.f13 = {C13,h13};
@@ -253,7 +253,7 @@ function ax = MakeAxis(x,y)
 	difxa = maxx-minx;
 	difya = maxy-miny;
 	sx = 1;
-	sy = 2;
+	sy = 1;
 	ax = [centerx-sx*difxa/2, centerx+sx*difxa/2, centery-sy*difya/2, centery+sy*difya/2];
 end
 
