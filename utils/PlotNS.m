@@ -16,8 +16,6 @@ function figs = InitialPlot(grids,filtering,res,par)
 	Q = res.Q;
 	Ue = res.Ue;
 	Ve = res.Ve;
-	Unew = res.Unew;
-	Vnew = res.Vnew;
 	ax = MakeAxis(grids.q.inner.Xmesh,grids.q.inner.Ymesh);
 
 	if(par.toPlot == 1)
@@ -28,7 +26,7 @@ function figs = InitialPlot(grids,filtering,res,par)
 		%surf
 		figs.f11 = surf(grids.q.inner.Xmesh,grids.q.inner.Ymesh,Q,'edgecolor','none','facecolor','interp');
 		%quiver
-		figs.f12 = quiver3(grids.q.outer.Xmesh,grids.q.outer.Ymesh,max(max(Q))*ones(size(Unew)),Unew,Vnew,zeros(size(Unew)),par.quivVectSca,'k-','LineWidth',0.25,'ShowArrowHead','off');
+		figs.f12 = quiver3(grids.q.outer.Xmesh,grids.q.outer.Ymesh,max(max(Q))*ones(size(Ue)),Ue,Ve,zeros(size(Ue)),par.quivVectSca,'k-','LineWidth',0.25,'ShowArrowHead','off');
 		axis(ax)
 		title('velocity vector field')
 		hold off
@@ -44,14 +42,14 @@ function figs = InitialPlot(grids,filtering,res,par)
 
 		figure(3)
 		clf
-		[C1,h1] = contour(grids.u.inner.Xmesh,grids.u.inner.Ymesh,U,par.conlines);
+		[C1,h1] = contour(grids.q.inner.Xmesh,grids.q.inner.Ymesh,U,par.conlines);
 		figs.f3 = {C1,h1};
 		axis(ax)
 		title('$u$','interpreter','latex','FontSize',20)
 
 		figure(4)
 		clf
-		[C2,h2] = contour(grids.v.inner.Xmesh,grids.v.inner.Ymesh,V,par.conlines);
+		[C2,h2] = contour(grids.q.inner.Xmesh,grids.q.inner.Ymesh,V,par.conlines);
 		figs.f4 = {C2,h2};
 		axis(ax)
 		title('$v$','interpreter','latex','FontSize',20)
@@ -97,7 +95,7 @@ function figs = InitialPlot(grids,filtering,res,par)
 		%surf
 		figs.f11 = surf(grids.q.inner.Xmesh,grids.q.inner.Ymesh,Q,'edgecolor','none','facecolor','interp');
 		%quiver
-		figs.f12 = quiver3(grids.q.outer.Xmesh,grids.q.outer.Ymesh,max(max(Q))*ones(size(Unew)),Unew,Vnew,zeros(size(Unew)),par.quivVectSca,'k-','LineWidth',0.25,'ShowArrowHead','off');
+		figs.f12 = quiver3(grids.q.outer.Xmesh,grids.q.outer.Ymesh,max(max(Q))*ones(size(Ue)),Ue,Ve,zeros(size(Ue)),par.quivVectSca,'k-','LineWidth',0.25,'ShowArrowHead','off');
 		%contour
 		[C13,h13] = contour3(grids.q.inner.Xmesh,grids.q.inner.Ymesh,Q,par.conlines,'k-');
 		figs.f13 = {C13,h13};
@@ -154,15 +152,13 @@ function figs = Update(grids,filtering,res,par,figs)
 		Q = res.Q;
 		Ue = res.Ue;
 		Ve = res.Ve;
-		Unew = res.Unew;
-		Vnew = res.Vnew;
 		
 		if(par.toPlot == 1)
 
 			set(figs.f11,'ZData',Q);
-			set(figs.f12,'ZData',max(max(Q))*ones(size(Unew)));
-			set(figs.f12,'UData',Unew);
-			set(figs.f12,'VData',Vnew);
+			set(figs.f12,'ZData',max(max(Q))*ones(size(Ue)));
+			set(figs.f12,'UData',Ue);
+			set(figs.f12,'VData',Ve);
 			set(figs.f2,'ZData',P);
 			umax = max(max(U));
 			umin = min(min(U));
@@ -194,9 +190,9 @@ function figs = Update(grids,filtering,res,par,figs)
 		elseif(par.toPlot == 3)
 
 			set(figs.f11,'ZData',Q);
-			set(figs.f12,'ZData',max(max(Q))*ones(size(Unew)));
-			set(figs.f12,'UData',Unew);
-			set(figs.f12,'VData',Vnew);
+			set(figs.f12,'ZData',max(max(Q))*ones(size(Ue)));
+			set(figs.f12,'UData',Ue);
+			set(figs.f12,'VData',Ve);
 			set(figs.f2,'ZData',P);
 			umax = max(max(U));
 			umin = min(min(U));
