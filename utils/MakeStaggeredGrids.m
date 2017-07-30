@@ -54,7 +54,7 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	decy = decy&(~ondecy|convex);
 	
 	grids.u.inner.sz = struct('x',nx-1,'y',ny);
-	grids.u.outer.sz = struct('x',nx,  'y',ny+2);
+	grids.u.outer.sz = struct('x',nx+1,  'y',ny+2);
 	
 	grids.v.inner.sz = struct('x',nx,  'y',ny-1);
 	grids.v.outer.sz = struct('x',nx+2,'y',ny+1);
