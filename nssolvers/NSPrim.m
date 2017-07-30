@@ -28,53 +28,35 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 	vdbcfull = filtering.v.inner.dbcfull;
 	pdbcfull = filtering.p.inner.dbcfull;
 	qdbcfull = filtering.q.inner.dbcfull;
-	%gridify
-	Udbcfull.w = gridify(udbcfull.w,nx-1,ny);
-	Udbcfull.e = gridify(udbcfull.e,nx-1,ny);
-	Udbcfull.s = gridify(udbcfull.s,nx-1,ny);
-	Udbcfull.n = gridify(udbcfull.n,nx-1,ny);
-	Udbcfull.c = gridify(udbcfull.c,nx-1,ny);
-	
-	Vdbcfull.w = gridify(vdbcfull.w,nx,ny-1);
-	Vdbcfull.e = gridify(vdbcfull.e,nx,ny-1);
-	Vdbcfull.s = gridify(vdbcfull.s,nx,ny-1);
-	Vdbcfull.n = gridify(vdbcfull.n,nx,ny-1);
-	Vdbcfull.c = gridify(vdbcfull.c,nx,ny-1);
-	
-	Pdbcfull.w = gridify(pdbcfull.w,nx,ny);
-	Pdbcfull.e = gridify(pdbcfull.e,nx,ny);
-	Pdbcfull.s = gridify(pdbcfull.s,nx,ny);
-	Pdbcfull.n = gridify(pdbcfull.n,nx,ny);
-	Pdbcfull.c = gridify(pdbcfull.c,nx,ny);
-	
-	Qdbcfull.w = gridify(qdbcfull.w,nx-1,ny-1);
-	Qdbcfull.e = gridify(qdbcfull.e,nx-1,ny-1);
-	Qdbcfull.s = gridify(qdbcfull.s,nx-1,ny-1);
-	Qdbcfull.n = gridify(qdbcfull.n,nx-1,ny-1);
-	Qdbcfull.c = gridify(qdbcfull.c,nx-1,ny-1);
 	
 	%outer
 	udbcfullE = filtering.u.outer.dbcfull;
 	vdbcfullE = filtering.v.outer.dbcfull;
+	pdbcfullE = filtering.p.outer.dbcfull;
 	qdbcfullE = filtering.q.outer.dbcfull;
+	
+	for i=1:numel(par.varnames)
+		matlab.lang.makeValidName([par.varnames{i} 'dbcfull']);
+		eval([par.varnames{i} 'dbcfull = filtering.' par.varnames{i} '.inner.dbcfull;']);
+		eval([par.varnames{i} 'dbcfullE = filtering.' par.varnames{i} '.outer.dbcfull;']);
+	end
+	
 	%gridify
-	UdbcfullE.w = gridify(udbcfullE.w,nx+1,ny+2);
-	UdbcfullE.e = gridify(udbcfullE.e,nx+1,ny+2);
-	UdbcfullE.s = gridify(udbcfullE.s,nx+1,ny+2);
-	UdbcfullE.n = gridify(udbcfullE.n,nx+1,ny+2);
-	UdbcfullE.c = gridify(udbcfullE.c,nx+1,ny+2);
+	dbcfields = fields(udbcfull);
 	
-	VdbcfullE.w = gridify(vdbcfullE.w,nx+2,ny+1);
-	VdbcfullE.e = gridify(vdbcfullE.e,nx+2,ny+1);
-	VdbcfullE.s = gridify(vdbcfullE.s,nx+2,ny+1);
-	VdbcfullE.n = gridify(vdbcfullE.n,nx+2,ny+1);
-	VdbcfullE.c = gridify(vdbcfullE.c,nx+2,ny+1);
-	
-	QdbcfullE.w = gridify(qdbcfullE.w,nx+1,ny+1);
-	QdbcfullE.e = gridify(qdbcfullE.e,nx+1,ny+1);
-	QdbcfullE.s = gridify(qdbcfullE.s,nx+1,ny+1);
-	QdbcfullE.n = gridify(qdbcfullE.n,nx+1,ny+1);
-	QdbcfullE.c = gridify(qdbcfullE.c,nx+1,ny+1);
+	for j=1:numel(dbcfields)
+		
+		Udbcfull.(dbcfields{j}) = gridify(udbcfull.(dbcfields{j}),nx-1,ny);
+		Vdbcfull.(dbcfields{j}) = gridify(vdbcfull.(dbcfields{j}),nx,ny-1);
+		Pdbcfull.(dbcfields{j}) = gridify(pdbcfull.(dbcfields{j}),nx,ny);
+		Qdbcfull.(dbcfields{j}) = gridify(qdbcfull.(dbcfields{j}),nx-1,ny-1);
+		
+		UdbcfullE.(dbcfields{j}) = gridify(udbcfullE.(dbcfields{j}),nx+1,ny+2);
+		VdbcfullE.(dbcfields{j}) = gridify(vdbcfullE.(dbcfields{j}),nx+2,ny+1);
+		PdbcfullE.(dbcfields{j}) = gridify(pdbcfullE.(dbcfields{j}),nx+2,ny+2);
+		QdbcfullE.(dbcfields{j}) = gridify(qdbcfullE.(dbcfields{j}),nx+1,ny+1);
+		
+	end
 	
 	uselEw = UdbcfullE.w&~(UdbcfullE.s|UdbcfullE.n);
 	uselEe = UdbcfullE.e&~(UdbcfullE.s|UdbcfullE.n);
@@ -87,26 +69,28 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 	vselEn = VdbcfullE.n&~(VdbcfullE.w|VdbcfullE.e);
 	
 	%inner boundary cond
-	Urhs = reshape(filtering.u.inner.filterMat'*rhs.inner.u,[nx-1,ny])';
+	Urhs = reshape(filtering.u.inner.filterMat'*rhs.u.inner,[nx-1,ny])';
 	Ubc = Urhs;
-	Ubc(Udbcfull.w|Udbcfull.e) = par.dt/(par.h^2*par.Re)*Urhs(Udbcfull.w|Udbcfull.e);
-	Ubc(Udbcfull.n|Udbcfull.s) = 2*par.dt/(par.h^2*par.Re)*Urhs(Udbcfull.n|Udbcfull.s);
+	Ubc(Udbcfull.w|Udbcfull.e) = par.dt/(hy^2*par.Re)*Urhs(Udbcfull.w|Udbcfull.e);
+	Ubc(Udbcfull.n|Udbcfull.s) = 2*par.dt/(hx^2*par.Re)*Urhs(Udbcfull.n|Udbcfull.s);
+	Ubc(Udbcfull.c) = 0;
 	
-	Vrhs = reshape(filtering.v.inner.filterMat'*rhs.inner.v*0,[nx,ny-1])';
+	Vrhs = reshape(filtering.v.inner.filterMat'*rhs.v.inner*0,[nx,ny-1])';
 	Vbc = Vrhs;
-	Vbc(Vdbcfull.n|Vdbcfull.s) = par.dt/(par.h^2*par.Re)*Vrhs(Vdbcfull.s|Vdbcfull.n);
-	Vbc(Vdbcfull.w|Vdbcfull.e) = 2*par.dt/(par.h^2*par.Re)*Vrhs(Vdbcfull.w|Vdbcfull.e);
+	Vbc(Vdbcfull.n|Vdbcfull.s) = par.dt/(hx^2*par.Re)*Vrhs(Vdbcfull.s|Vdbcfull.n);
+	Vbc(Vdbcfull.w|Vdbcfull.e) = 2*par.dt/(hy^2*par.Re)*Vrhs(Vdbcfull.w|Vdbcfull.e);
+	Vbc(Vdbcfull.c) = 0;
 	
-	QUbc = 0*reshape(filtering.q.inner.filterMat'*rhs.inner.q,[nx-1,ny-1])';
+	QUbc = 0*reshape(filtering.q.inner.filterMat'*rhs.q.inner,[nx-1,ny-1])';
 	QVbc = QUbc;
 	
 	%outer boundary cond
-	UbcE = reshape(filtering.u.outer.filterMat'*rhs.outer.u,[nx+1,ny+2])';
-	VbcE = reshape(filtering.v.outer.filterMat'*rhs.outer.v*0,[nx+2,ny+1])';
-	QUbcE = 0*reshape(filtering.q.outer.filterMat'*rhs.outer.q,[nx+1,ny+1])';
+	UbcE = reshape(filtering.u.outer.filterMat'*rhs.u.outer,[nx+1,ny+2])';
+	VbcE = reshape(filtering.v.outer.filterMat'*rhs.v.outer*0,[nx+2,ny+1])';
+	QUbcE = 0*reshape(filtering.q.outer.filterMat'*rhs.q.outer,[nx+1,ny+1])';
 	QVbcE = QUbcE;
 	
-	Lp = laplacian2(nx,ny,hx,hy,1,1,1,1,pdbcfull.w|pdbcfull.e,pdbcfull.s|pdbcfull.n,filtering.p.inner.bciofull,-1);
+	Lp = laplacian2(nx,ny,hx,hy,1,1,1,1,pdbcfull.w|pdbcfull.e,(pdbcfull.s|pdbcfull.n),filtering.p.inner.bciofull,-1);
 	Lp = filtering.p.inner.filterMat*Lp*filtering.p.inner.filterMat';
 	Lp(1,1) = 3/2*Lp(1,1);
 	perp = symamd(Lp); Rp = chol(Lp(perp,perp)); Rpt = Rp';
@@ -126,31 +110,44 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 	perq = symamd(Lq); Rq = chol(Lq(perq,perq)); Rqt = Rq';
 	
 	if(par.useGPU)
-		Lp = gpuArray(Lp);
-		Lu = gpuArray(Lu);
-		Lv = gpuArray(Lv);
-		Lq = gpuArray(Lq);
+
+		Rp = gpuArray(Lp);
+		Rpt = Rp';
+
+		Ru = gpuArray(Lu);
+		Rut = Ru';
+
+		Rv = gpuArray(Lv);
+		Rvt = Rv';
+
+		Rq = gpuArray(Lq);
+		Rqt = Rq';
+
 	end
 	
 	uValMat = reshape(filtering.u.inner.valind,[nx-1,ny])';
-	uValMatE = [zeros([ny,1]),uValMat,zeros([ny,1])];
-	uValMatE = logical([zeros([1,nx+1]);uValMatE;zeros([1,nx+1])]);
-	uvalindE = reshape(uValMatE',[],1);
+	uValMatE = reshape(filtering.u.outer.valind,[nx+1,ny+2])';
+	uValMatInE = [zeros([ny,1]),uValMat,zeros([ny,1])];
+	uValMatInE = logical([zeros([1,nx+1]);uValMatInE;zeros([1,nx+1])]);
+	uvalindE = reshape(uValMatInE',[],1);
 	
 	vValMat = reshape(filtering.v.inner.valind,[nx,ny-1])';
-	vValMatE = [zeros([ny-1,1]),vValMat,zeros([ny-1,1])];
-	vValMatE = logical([zeros([1,nx+2]);vValMatE;zeros([1,nx+2])]);
-	vvalindE = reshape(vValMatE',[],1);
+	vValMatE = reshape(filtering.v.outer.valind,[nx+2,ny+1])';
+	vValMatInE = [zeros([ny-1,1]),vValMat,zeros([ny-1,1])];
+	vValMatInE = logical([zeros([1,nx+2]);vValMatInE;zeros([1,nx+2])]);
+	vvalindE = reshape(vValMatInE',[],1);
 	
 	pValMat = reshape(filtering.p.inner.valind,[nx,ny])';
-	pValMatE = [zeros([ny,1]),pValMat,zeros([ny,1])];
-	pValMatE = logical([zeros([1,nx+2]);pValMatE;zeros([1,nx+2])]);
-	pvalindE = reshape(pValMatE',[],1);
+	pValMatE = reshape(filtering.p.outer.valind,[nx+2,ny+2])';
+	pValMatInE = [zeros([ny,1]),pValMat,zeros([ny,1])];
+	pValMatInE = logical([zeros([1,nx+2]);pValMatInE;zeros([1,nx+2])]);
+	pvalindE = reshape(pValMatInE',[],1);
 	
 	qValMat = reshape(filtering.q.inner.valind,[nx-1,ny-1])';
-	qValMatE = [zeros([ny-1,1]),qValMat,zeros([ny-1,1])];
-	qValMatE = logical([zeros([1,nx+1]);qValMatE;zeros([1,nx+1])]);
-	qvalindE = reshape(qValMatE',[],1);
+	qValMatE = reshape(filtering.q.outer.valind,[nx+1,ny+1])';
+	qValMatInE = [zeros([ny-1,1]),qValMat,zeros([ny-1,1])];
+	qValMatInE = logical([zeros([1,nx+1]);qValMatInE;zeros([1,nx+1])]);
+	qvalindE = reshape(qValMatInE',[],1);
 	
 	Pxsel = circshift(Pdbcfull.w,-1,2)&~circshift(reshape(filtering.p.inner.bciofull,[nx,ny])',-1,2);
 	Pxsel = Pxsel(:,1:end-1);
@@ -167,17 +164,17 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 	
 	fprintf('\n')
 	lents = 0;
-	for i=1:par.timesteps
+	for j=1:par.timesteps
 		
 		% nonlinear terms/explicit convection
 		gamma = min(1.2*par.dt*max(max(max(abs(U)))/hx,max(max(abs(V)))/hy),1);
 		
-		Ue(uValMatE) = U(uValMat);
+		Ue(uValMatInE) = U(uValMat);
 		Ue(uselEw|uselEe) = UbcE(uselEw|uselEe);
 		Ue(UdbcfullE.n) = 2*UbcE(UdbcfullE.n)-Ue(UselinN);
 		Ue(UdbcfullE.s) = 2*UbcE(UdbcfullE.s)-Ue(UselinS);
 		
-		Ve(vValMatE) = V(vValMat);
+		Ve(vValMatInE) = V(vValMat);
 		Ve(vselEs|vselEn) = VbcE(vselEs|vselEn);
 		Ve(VdbcfullE.w) = 2*VbcE(VdbcfullE.w)-Ve(VselinW);
 		Ve(VdbcfullE.e) = 2*VbcE(VdbcfullE.e)-Ve(VselinE);
@@ -193,10 +190,10 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 		UVy(UdbcfullE.s(2:end-1,:)|UdbcfullE.n(2:end-1,:)|~uvxsel(2:end-1,:)) = 0;
 		
 		Ue2 = Ue;
-		Ue2(~uValMatE&(UdbcfullE.n|UdbcfullE.s)) = 0;
+		Ue2(~uValMatInE&(UdbcfullE.n|UdbcfullE.s)) = 0;
 		Ue2 = Ue2(2:end-1,:);
 		Ve2 = Ve;
-		Ve2(~vValMatE&(VdbcfullE.w|VdbcfullE.e)) = 0;
+		Ve2(~vValMatInE&(VdbcfullE.w|VdbcfullE.e)) = 0;
 		Ve2 = Ve2(:,2:end-1);
 		Ua = mvgavg(Ue2,2);
 		Ud = diff(Ue2')'/2;
@@ -211,30 +208,30 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 		% implicit diffusion
 		rhsu = reshape((U+Ubc)',[],1);
 		rhsu = rhsu(filtering.u.inner.valind);
-		u = Ru\(Rut\rhsu(peru));
+		u(peru,1) = (Ru\(Rut\rhsu(peru)));
 		U = reshape((1*filtering.u.inner.filterMat')*u,nx-1,ny)';
 		
 		rhsv = reshape((V+Vbc)',[],1);
 		rhsv = rhsv(filtering.v.inner.valind);
-		v = Rv\(Rvt\rhsv(perv));
+		v(perv,1) = (Rv\(Rvt\rhsv(perv)));
 		V = reshape((1*filtering.v.inner.filterMat')*v,nx,ny-1)';
 		
 		% pressure correction
 		Uep = Ue;
-		Uep(uValMatE) = U(uValMat);
+		Uep(uValMatInE) = U(uValMat);
 		Ue(uselEw|uselEe) = UbcE(uselEw|uselEe);
 		Uep(UdbcfullE.s|UdbcfullE.n) = 0;
 		Uep = Uep(2:end-1,:);
 		
 		Vep = Ve;
-		Vep(vValMatE) = V(vValMat);	
+		Vep(vValMatInE) = V(vValMat);	
 		Vep(vselEs|vselEn) = VbcE(vselEs|vselEn);
 		Vep(VdbcfullE.w|VdbcfullE.e) = 0;
 		Vep = Vep(:,2:end-1);
 		
 		rhsp = reshape((diff(Uep')'/hx+diff(Vep)/hy)',[],1);
 		rhsp = rhsp(filtering.p.inner.valind);
-		p = -Rp\(Rpt\rhsp(perp));
+		p(perp,1) = -(Rp\(Rpt\rhsp(perp)));
 		P = reshape((1*filtering.p.inner.filterMat')*p,nx,ny)';
 		Px = diff(P')'/hx;
 		%Px(Pxsel) = 0;
@@ -243,23 +240,23 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 		U = U-Px;
 		V = V-Py;
 		
-		Ue(uValMatE) = U(uValMat);
+		Ue(uValMatInE) = U(uValMat);
 		Ue(UdbcfullE.e) = UbcE(UdbcfullE.e);
 		Ue(UdbcfullE.w) = UbcE(UdbcfullE.w);
 		Ue(UdbcfullE.n) = UbcE(UdbcfullE.n);
 		Ue(UdbcfullE.s) = UbcE(UdbcfullE.s);
 		
-		Ve(vValMatE) = V(vValMat);
+		Ve(vValMatInE) = V(vValMat);
 		Ve(VdbcfullE.s) = VbcE(VdbcfullE.s);
 		Ve(VdbcfullE.n) = VbcE(VdbcfullE.n);
 		Ve(VdbcfullE.w) = VbcE(VdbcfullE.w);
 		Ve(VdbcfullE.e) = VbcE(VdbcfullE.e);
 		
-		if((i==1 || mod(i,par.plotoniter)==0)&&~par.noplot)
+		if((j==1 || mod(j,par.plotoniter)==0)&&~par.noplot)
 			
 			%stream function
 			%rhsq = reshape((diff(U)/hy-diff(V')'/hx)',[],1);
-			%rhsq(filtering.q.inner.onfull) = rhs.inner.q(filtering.q.inner.on);
+			%rhsq(filtering.q.inner.onfull) = rhs.q.inner(filtering.q.inner.on);
 			%rhsq = rhsq(filtering.q.inner.valind);
 			%q = Rq\(Rqt\rhsq(perq));
 			%Q = reshape((1*filtering.q.inner.filterMat')*q,nx-1,ny-1)';
@@ -271,11 +268,11 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 % 			res.Ue = gather(Ue);
 % 			res.Ve = gather(Ve);
 
-			[res.Ue,res.Ve] = makeQuiverData(Ue,Ve,QdbcfullE,QUbcE,QVbcE);
+			[res.Ue,res.Ve] = makeQuiverData(Ue,Ve,QdbcfullE,QUbcE,QVbcE,reshape(filtering.q.outer.valind,[nx+1,ny+1])');
 			res.U = zeros(ny-1,nx-1);
 			res.V = zeros(ny-1,nx-1);
-			res.U(qValMat) = res.Ue(qValMatE);
-			res.V(qValMat) = res.Ve(qValMatE);
+			res.U(qValMat) = res.Ue(qValMatInE);
+			res.V(qValMat) = res.Ve(qValMatInE);
 			
 			a = res.Ue;
 			b = res.U;
@@ -291,7 +288,7 @@ function [grids,filtering,res,par,figs] = NSPrim(par,grids,filtering,rhs,figs)
 			end
 		end
 		
-		timestr = ['Time step: ' num2str(i*par.dt,'%5.2f') '/' num2str(par.tf,'%5.2f') 's'];
+		timestr = ['Time step: ' num2str(j*par.dt,'%5.2f') '/' num2str(par.tf,'%5.2f') 's'];
 		fprintf([repmat('\b',1,lents) timestr]);
 		lents = numel(timestr);
 		
@@ -307,11 +304,13 @@ function v = vectify(M)
 	v = reshape(M',[],1);
 end
 
-function [Unew,Vnew] = makeQuiverData(U,V,QdbcfullE,QUbcE,QVbcE)
+function [Unew,Vnew] = makeQuiverData(U,V,QdbcfullE,QUbcE,QVbcE,qValMat)
 	Unew = mvgavg(U);
 	Vnew = mvgavg(V,2);
 	Unew(QdbcfullE.s|QdbcfullE.n|QdbcfullE.c) = QUbcE(QdbcfullE.s|QdbcfullE.n|QdbcfullE.c);
 	Vnew(QdbcfullE.w|QdbcfullE.e|QdbcfullE.c) = QVbcE(QdbcfullE.w|QdbcfullE.e|QdbcfullE.c);
+	Unew(~(qValMat)) = 0;
+	Vnew(~(qValMat)) = 0;
 	%Len = sqrt(Unew.^2+Vnew.^2+eps);
 	%Unew = Unew./Len;
 	%Vnew = Vnew./Len;

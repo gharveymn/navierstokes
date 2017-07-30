@@ -1,35 +1,21 @@
 function [dbc,dbcfull] = boundarysides(grids,filtering,par,side,nx)
-	%GETWHEREBOUNDARIES I'm somewhat suprised this actually works
+	%BOUNDARYSIDES finds which side each boundary is on
 	
 	if(~exist('side','var'))
 		side = 'inner';
 	end
 	
-	if(strcmp(side,'inner'))
-		xmeshfull = grids.inner.xmeshfull;
-		ymeshfull = grids.inner.ymeshfull;
-		onfull = filtering.inner.onfull;
-		valindinner = filtering.inner.valind;
-	elseif(strcmp(side,'outer'))
-		xmeshfull = grids.outer.xmeshfull;
-		ymeshfull = grids.outer.ymeshfull;
-		onfull = filtering.outer.onfull;
-		valindouter = filtering.outer.valind;
-	else
-		ME = MException('boundarysides:invalidParameterException','Invalid value for side');
-		throw(ME)
-	end
+	xmeshfull = grids.(side).xmeshfull;
+	ymeshfull = grids.(side).ymeshfull;
+	onfull = filtering.(side).onfull;
+	valind = filtering.(side).valind;
+	
+	wesnc = [par.wesn {'c'}];
 	
 	xmin = min(xmeshfull);
 	xmax = max(xmeshfull);
 	ymin = min(ymeshfull);
 	ymax = max(ymeshfull);
-	
-	%set to contain all possible indices
-	bcw = onfull;
-	bce = onfull;
-	bcs = onfull;
-	bcn = onfull;
 	
 	%get indices on the ends
 	xminb = (xmeshfull==xmin);
@@ -38,24 +24,16 @@ function [dbc,dbcfull] = boundarysides(grids,filtering,par,side,nx)
 	ymaxb = (ymeshfull==ymax);
 	
 	%if an index is on the overall boundary then it must be a boundary point
-	bcw = bcw&xminb;
-	bce = bce&xmaxb;
-	bcs = bcs&yminb;
-	bcn = bcn&ymaxb;
+	bcw = onfull&xminb;
+	bce = onfull&xmaxb;
+	bcs = onfull&yminb;
+	bcn = onfull&ymaxb;
 	
 	%make shifted index matrices, filter out those indices at the max values since circshift loops
-	
-	if(strcmp(side,'inner'))
-		r = circshift(valindinner&~xmaxb,1);
-		l = circshift(valindinner&~xminb,-1);
-		u = circshift(valindinner&~ymaxb,nx);
-		d = circshift(valindinner&~yminb,-nx);
-	else
-		r = circshift(valindouter&~xmaxb,1);
-		l = circshift(valindouter&~xminb,-1);
-		u = circshift(valindouter&~ymaxb,nx);
-		d = circshift(valindouter&~yminb,-nx);
-	end
+	r = circshift(valind&~xmaxb,1);
+	l = circshift(valind&~xminb,-1);
+	u = circshift(valind&~ymaxb,nx);
+	d = circshift(valind&~yminb,-nx);
 	
 	%if the shift makes it go off the boundary then we have a direction
 	bcw = bcw|(onfull&~r);
@@ -69,31 +47,17 @@ function [dbc,dbcfull] = boundarysides(grids,filtering,par,side,nx)
 	%inner corner boundary condition
 	bcci = onfull&(r&l&u&d);
 	
-	%bcw = bcw|bcci;
-	%bce = bce|bcci;
-	%bcs = bcs|bcci;
-	%bcn = bcn|bcci;
+	%bcw = bcw|(bcci&(circshift(bcw,-nx)|circshift(bcw,nx)));
+	%bce = bce|(bcci&(circshift(bce,-nx)|circshift(bce,nx)));
+	%bcs = bcs|(bcci&(circshift(bcs,-1)|circshift(bcs,1)));
+	%bcn = bcn|(bcci&(circshift(bcn,-1)|circshift(bcn,1)));
 	bcc = bcc|bcci;
 	
-	dbcfull.w = bcw;
-	dbcfull.e = bce;
-	dbcfull.s = bcs;
-	dbcfull.n = bcn;
-	dbcfull.c = bcc;
-	
-	%wipe out invalid indices
-	if(strcmp(side,'inner'))
-		dbc.w = bcw(valindinner);
-		dbc.e = bce(valindinner);
-		dbc.s = bcs(valindinner);
-		dbc.n = bcn(valindinner);
-		dbc.c = bcc(valindinner);
-	else
-		dbc.w = bcw(valindouter);
-		dbc.e = bce(valindouter);
-		dbc.s = bcs(valindouter);
-		dbc.n = bcn(valindouter);
-		dbc.c = bcc(valindouter);
+	for i = 1:numel(wesnc)
+		eval(['dbcfull.' wesnc{i} '= bc' wesnc{i} ';']);
+		
+		%wipe out invalid indices
+		eval(['dbc.' wesnc{i} '= bc' wesnc{i} '(valind);']);
 	end
 	
 	

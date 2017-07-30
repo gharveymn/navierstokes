@@ -15,8 +15,10 @@ function par = Parameters
 	
 	%set true to switch to ParametersDebug
 	par.debug = false;
-	
 	par.useGPU = false;
+	
+	par.varnames = {'u','v','p','q'};
+	par.wesn = {'w','e','s','n'};
 	
 	par.maptype = 'g';
 	par.mapfile = 'symch.txt';

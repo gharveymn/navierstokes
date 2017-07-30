@@ -53,90 +53,104 @@ function [grids,filtering,par] = MakeStaggeredGrids(par)
 	incy = incy&(~onincy|convex);
 	decy = decy&(~ondecy|convex);
 	
-	%Q
-	%------------------------------------------------
+	grids.u.inner.sz = struct('x',nx-1,'y',ny);
+	grids.u.outer.sz = struct('x',nx,'y',ny+2);
 	
-	%make streamfunction grid
-	%inner
-	qxlimcoords = xlimcoords - hx*incx + hx*decx;
-	qylimcoords = ylimcoords - hy*incy + hy*decy;
-	[qgrids,qfiltering] = createGrids(limits(1)+hx,limits(2)-hx,limits(3)+hy,limits(4)-hy,nx-1,ny-1,qxlimcoords,qylimcoords,hx,hy,par,'inner');	
-
-	%outer
-	[qgrids,qfiltering] = createGrids(limits(1),limits(2),limits(3),limits(4),nx+1,ny+1,xlimcoords,ylimcoords,hx,hy,par,'outer',qgrids,qfiltering);	
+	grids.v.inner.sz = struct('x',nx,'y',ny-1);
+	grids.v.outer.sz = struct('x',nx+2,'y',ny+1);
 	
-	%P
-	%------------------------------------------------
+	grids.p.inner.sz = struct('x',nx  ,'y',ny  );
+	grids.p.outer.sz = struct('x',nx+2,'y',ny+2);
+	
+	grids.q.inner.sz = struct('x',nx-1,'y',ny-1);
+	grids.q.outer.sz = struct('x',nx+1,'y',ny+1);
 
-	%make pressure grids at cell centers
-	%inner
-	pxlimcoords = xlimcoords - hx/2*incx + hx/2*decx;
-	pylimcoords = ylimcoords - hy/2*incy + hy/2*decy;
-	[pgrids,pfiltering] = createGrids(limits(1)+hx/2,limits(2)-hx/2,limits(3)+hy/2,limits(4)-hy/2,nx,ny,pxlimcoords,pylimcoords,hx,hy,par,'inner');
-
-	%outer
-	pxlimcoords = xlimcoords + hx/2*incx - hx/2*decx;
-	pylimcoords = ylimcoords + hy/2*incy - hy/2*decy;
-	[pgrids,pfiltering] = createGrids(limits(1)-hx/2,limits(2)+hx/2,limits(3)-hy/2,limits(4)+hy/2,nx+2,ny+2,pxlimcoords,pylimcoords,hx,hy,par,'outer',pgrids,pfiltering);	
-
+	filtering = struct;
+	
 	%U
-	%------------------------------------------------
+	%----------
 
 	%make u velocity grid offset in the y direction
 	%inner
-	uxlimcoords = xlimcoords - hx*incx + hx*decx;
-	uylimcoords = ylimcoords - hy/2*incy + hy/2*decy;
-	[ugrids,ufiltering] = createGrids(limits(1)+hx,limits(2)-hx,limits(3)+hy/2,limits(4)-hy/2,nx-1,ny,uxlimcoords,uylimcoords,hx,hy,par,'inner');
+	grids.u.inner.xlimcoords = xlimcoords - hx*incx + hx*decx;
+	grids.u.inner.ylimcoords = ylimcoords - hy/2*incy + hy/2*decy;
+	[grids,filtering] = createGrids(grids,filtering,par,'inner','u');
 
 	%outer
-	uxlimcoords = xlimcoords;
-	uylimcoords = ylimcoords + hy/2*incy - hy/2*decy;	
-	[ugrids,ufiltering] = createGrids(limits(1),limits(2),limits(3)-hy/2,limits(4)+hy/2,nx+1,ny+2,uxlimcoords,uylimcoords,hx,hy,par,'outer',ugrids,ufiltering);	
+	grids.u.outer.xlimcoords = xlimcoords;
+	grids.u.outer.ylimcoords = ylimcoords + hy/2*incy - hy/2*decy;	
+	[grids,filtering] = createGrids(grids,filtering,par,'outer','u');
+	
+	%------------------------------------------------
 	
 	%V
-	%------------------------------------------------
+	%----------
 
 	%make v velocity grid offset in the x direction
 	%inner
-	vxlimcoords = xlimcoords - hx/2*incx + hx/2*decx;
-	vylimcoords = ylimcoords - hy*incy + hy*decy;
-	[vgrids,vfiltering] = createGrids(limits(1)+hx/2,limits(2)-hx/2,limits(3)+hy,limits(4)-hy,nx,ny-1,vxlimcoords,vylimcoords,hx,hy,par,'inner');	
+	grids.v.inner.xlimcoords = xlimcoords - hx/2*incx + hx/2*decx;
+	grids.v.inner.ylimcoords = ylimcoords - hy*incy + hy*decy;
+	[grids,filtering] = createGrids(grids,filtering,par,'inner','v');	
 
 	%outer
-	vxlimcoords = xlimcoords + hx/2*incx - hx/2*decx;
-	vylimcoords = ylimcoords;
-	[vgrids,vfiltering] = createGrids(limits(1)-hx/2,limits(2)+hx/2,limits(3),limits(4),nx+2,ny+1,vxlimcoords,vylimcoords,hx,hy,par,'outer',vgrids,vfiltering);
+	grids.v.outer.xlimcoords = xlimcoords + hx/2*incx - hx/2*decx;
+	grids.v.outer.ylimcoords = ylimcoords;
+	[grids,filtering] = createGrids(grids,filtering,par,'outer','v');
 	
-	grids.p = pgrids;
-	grids.u = ugrids;
-	grids.v = vgrids;
-	grids.q = qgrids;
-	filtering.p = pfiltering;
-	filtering.u = ufiltering;
-	filtering.v = vfiltering;
-	filtering.q = qfiltering;
+	%------------------------------------------------
 	
-	%this is absolutely spaghetti code at this point
-	grids.p = placenums(grids.p,nx,ny);
-	grids.u = placenums(grids.u,nx,ny);
-	grids.v = placenums(grids.v,nx,ny);
-	grids.q = placenums(grids.q,nx,ny);
+	%P
+	%----------
+
+	%make pressure grids at cell centers
+	%inner
+	grids.p.inner.xlimcoords = xlimcoords - hx/2*incx + hx/2*decx;
+	grids.p.inner.ylimcoords = ylimcoords - hy/2*incy + hy/2*decy;
+	[grids,filtering] = createGrids(grids,filtering,par,'inner','p');
+
+	%outer
+	grids.p.outer.xlimcoords = xlimcoords + hx/2*incx - hx/2*decx;
+	grids.p.outer.ylimcoords = ylimcoords + hy/2*incy - hy/2*decy;
+	[grids,filtering] = createGrids(grids,filtering,par,'outer','p');
+	
+	%------------------------------------------------
+	
+	%Q
+	%----------
+	
+	%make streamfunction grid
+	%inner
+	grids.q.inner.xlimcoords = xlimcoords - hx*incx + hx*decx;
+	grids.q.inner.ylimcoords = ylimcoords - hy*incy + hy*decy;
+	[grids,filtering] = createGrids(grids,filtering,par,'inner','q');
+
+	%outer
+	grids.q.outer.xlimcoords = xlimcoords;
+	grids.q.outer.ylimcoords = ylimcoords;
+	[grids,filtering] = createGrids(grids,filtering,par,'outer','q');
+	
+	%------------------------------------------------
 	
 	fclose('all');
 end
 
-function [grids,filtering] = createGrids(x1,x2,y1,y2,nx,ny,xlimcoords,ylimcoords,hx,hy,par,side,grids,filtering)
+function [grids,filtering] = createGrids(grids,filtering,par,side,vn)
 	
-	xinit = linspace(x1,x2,nx)';
-	yinit = linspace(y1,y2,ny)';
+	hx = par.hx;
+	hy = par.hy;
 	
-	xmeshfull = kron(ones(ny,1),xinit);
-	ymeshfull = kron(yinit,ones(nx,1));
+	szx = grids.(vn).(side).sz.x;
+	szy = grids.(vn).(side).sz.y;
+
+	xlimcoords = grids.(vn).(side).xlimcoords;
+	ylimcoords = grids.(vn).(side).ylimcoords;
+
 	
-	a = round(2*xmeshfull/hx);
-	b = round(2*ymeshfull/hy);
-	c = round(2*xlimcoords/hx);
-	d = round(2*ylimcoords/hy);
+	xinit = linspace(min(grids.(vn).(side).xlimcoords),max(grids.(vn).(side).xlimcoords),szx)';
+	yinit = linspace(min(grids.(vn).(side).ylimcoords),max(grids.(vn).(side).ylimcoords),szy)';
+	
+	xmeshfull = kron(ones(szy,1),xinit);
+	ymeshfull = kron(yinit,ones(szx,1));
 	
 	[valind,onfull] = inpolygon(round(2*xmeshfull/hx),round(2*ymeshfull/hy),round(2*xlimcoords/hx),round(2*ylimcoords/hy));
 	
@@ -145,43 +159,32 @@ function [grids,filtering] = createGrids(x1,x2,y1,y2,nx,ny,xlimcoords,ylimcoords
 	
 	on = onfull(valind);
 	
-	Xmesh = reshape(xmeshfull./valind,[nx,ny])';
-	Ymesh = reshape(ymeshfull./valind,[nx,ny])';
+	Xmesh = reshape(xmeshfull./valind,[szx,szy])';
+	Ymesh = reshape(ymeshfull./valind,[szx,szy])';
 	
 	xmesh = filterMat*xmeshfull;
 	ymesh = filterMat*ymeshfull;
 	
-	g.xinit = xinit;
-	g.yinit = yinit;
-	g.xmesh = xmesh;
-	g.ymesh = ymesh;
-	g.Xmesh = Xmesh;
-	g.Ymesh = Ymesh;
-	g.xmeshfull = xmeshfull;
-	g.ymeshfull = ymeshfull;
-	grids.(side) = g;
+	grids.(vn).(side).xinit = xinit;
+	grids.(vn).(side).yinit = yinit;
+	grids.(vn).(side).xmesh = xmesh;
+	grids.(vn).(side).ymesh = ymesh;
+	grids.(vn).(side).Xmesh = Xmesh;
+	grids.(vn).(side).Ymesh = Ymesh;
+	grids.(vn).(side).xmeshfull = xmeshfull;
+	grids.(vn).(side).ymeshfull = ymeshfull;
 	
-	f.filterMat = filterMat;
-	f.valind = valind;
-	f.on = on;
-	f.onfull = onfull;
-	filtering.(side) = f;
+	filtering.(vn).(side).filterMat = filterMat;
+	filtering.(vn).(side).valind = valind;
+	filtering.(vn).(side).on = on;
+	filtering.(vn).(side).onfull = onfull;
 	
-	[dbc,dbcfull] = boundarysides(grids,filtering,par,side,nx);
+	[dbc,dbcfull] = boundarysides(grids.(vn),filtering.(vn),par,side,szx);
 	
-	filtering.(side).dbc = dbc;
-	filtering.(side).dbcfull = dbcfull;
-	filtering.(side).gp = [];
+	filtering.(vn).(side).dbc = dbc;
+	filtering.(vn).(side).dbcfull = dbcfull;
+	filtering.(vn).(side).gp = [];
 
-end
-
-function grids = placenums(grids,nx,ny)
-	grids.nxp1 = nx+1;
-	grids.nyp1 = ny+1;
-	grids.nx = nx;
-	grids.ny = ny;
-	grids.nxm1 = nx-1;
-	grids.nym1 = ny-1;
 end
 	
 	
