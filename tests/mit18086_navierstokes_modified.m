@@ -20,7 +20,7 @@ lx = 1;       % width of box
 ly = 1;       % height of box
 nx = 100;      % number of x-gridpoints
 ny = 100;      % number of y-gridpoints
-plotoniter = 100;%ceil(tf/dt);  % number of steps with graphic output
+plotoniter = 10;%ceil(tf/dt);  % number of steps with graphic output
 clear u v p q;
 noplot = false;
 %-----------------------------------------------------------------------
@@ -34,8 +34,8 @@ y = linspace(0,ly,ny+1); hy = ly/ny;
 % initial conditions
 U = zeros(nx-1,ny); V = zeros(nx,ny-1);
 % boundary conditions
-uN = x*0+1;    vN = avg(x)*0;
-uS = x*0;      vS = avg(x)*0;
+uN = x*0;    vN = avg(x)*0+1;
+uS = x*0;      vS = avg(x)*0+1;
 uW = avg(y)*0; vW = y*0;
 uE = avg(y)*0; vE = y*0;
 %-----------------------------------------------------------------------

@@ -1,19 +1,17 @@
-function figs = PlotNS(grids,filtering,res,par,figs)
+function PlotNS(grids,filtering,res,par)
 	set(gcf, 'renderer', 'zbuffer')
-	if(~exist('figs','var'))
-		figs = InitialPlot(grids,filtering,res,par);
-	else
-		%update if we already initialized the plots
-		figs = Update(grids,filtering,res,par,figs);
-	end
+	Update(grids,filtering,res,par);
 end
 
-function figs = InitialPlot(grids,filtering,res,par)
+function InitialPlot(grids,filtering,res,par)
+	
+	global figs
 	
 	U = res.U;
 	V = res.V;
 	P = res.P;
 	Q = res.Q;
+	Qe = res.Qe;
 	Ue = res.Ue;
 	Ve = res.Ve;
 	ax = MakeAxis(grids.q.inner.Xmesh,grids.q.inner.Ymesh);
@@ -65,13 +63,13 @@ function figs = InitialPlot(grids,filtering,res,par)
 		
 		figure(1)
 		clf
-		figs.f1 = surf(grids.u.inner.Xmesh,grids.u.inner.Ymesh,U);
+		figs.f1 = surf(grids.q.outer.Xmesh,grids.q.outer.Ymesh,Ue);
 		axis(ax)
 		title('$U$','interpreter','latex','FontSize',20)
 		
 		figure(2)
 		clf
-		figs.f2 = surf(grids.v.inner.Xmesh,grids.v.inner.Ymesh,V);
+		figs.f2 = surf(grids.q.outer.Xmesh,grids.q.outer.Ymesh,Ve);
 		axis(ax)
 		title('$V$','interpreter','latex','FontSize',20)
 		
@@ -83,7 +81,7 @@ function figs = InitialPlot(grids,filtering,res,par)
 		
 		figure(4)
 		clf
-		figs.f4 = surf(grids.q.inner.Xmesh,grids.q.inner.Ymesh,Q);
+		figs.f4 = surf(grids.q.outer.Xmesh,grids.q.outer.Ymesh,Qe);
 		axis(ax)
 		title('$Q$','interpreter','latex','FontSize',20)
 		
@@ -141,15 +139,24 @@ function figs = InitialPlot(grids,filtering,res,par)
 	
 end
 
-function figs = Update(grids,filtering,res,par,figs)
+function Update(grids,filtering,res,par)
 	
 	lastwarn('')
+	
+	global figs
+	
+	if(isempty(figs))
+		InitialPlot(grids,filtering,res,par);
+	end
+		
+	
 	
 	try
 		U = res.U;
 		V = res.V;
 		P = res.P;
 		Q = res.Q;
+		Qe = res.Qe;
 		Ue = res.Ue;
 		Ve = res.Ve;
 		
@@ -182,10 +189,11 @@ function figs = Update(grids,filtering,res,par,figs)
  			set(figs.f5{2},'ZData',Q);
 
 		elseif(par.toPlot == 2)
-			set(figs.f1,'ZData',U);
-			set(figs.f2,'ZData',V);
+			
+			set(figs.f1,'ZData',Ue);
+			set(figs.f2,'ZData',Ve);
 			set(figs.f3,'ZData',P);
-			set(figs.f4,'ZData',Q);
+			set(figs.f4,'ZData',Qe);
 			
 		elseif(par.toPlot == 3)
 
@@ -225,11 +233,11 @@ function figs = Update(grids,filtering,res,par,figs)
 	catch ME
 		%throw(ME)
 		disp('Couldn''t update one of the figures; we''ll try to make new ones')
-		figs = InitialPlot(grids,filtering,res,par);
+		InitialPlot(grids,filtering,res,par);
 	end
 	
 	if(~isempty(lastwarn))
-		figs = InitialPlot(grids,filtering,res,par);
+		InitialPlot(grids,filtering,res,par);
 	end
 	
 end

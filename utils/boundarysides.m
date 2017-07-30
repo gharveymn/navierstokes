@@ -10,7 +10,7 @@ function [dbc,dbcfull] = boundarysides(grids,filtering,par,side,nx)
 	onfull = filtering.(side).onfull;
 	valind = filtering.(side).valind;
 	
-	wesnc = [par.wesn {'c'}];
+	wesnc = [par.wesn {'c','co','ci'}];
 	
 	xmin = min(xmeshfull);
 	xmax = max(xmeshfull);
@@ -42,7 +42,7 @@ function [dbc,dbcfull] = boundarysides(grids,filtering,par,side,nx)
 	bcn = bcn|(onfull&~d);
 	
 	%corners--is in two of the previous or is surrounded
-	bcc = (bcw&bce)|(bcw&bcs)|(bcw&bcn)|(bce&bcs)|(bce&bcn)|(bcs&bcn);
+	bcco = (bcw&bce)|(bcw&bcs)|(bcw&bcn)|(bce&bcs)|(bce&bcn)|(bcs&bcn);
 	
 	%inner corner boundary condition
 	bcci = onfull&(r&l&u&d);
@@ -51,7 +51,8 @@ function [dbc,dbcfull] = boundarysides(grids,filtering,par,side,nx)
 	%bce = bce|(bcci&(circshift(bce,-nx)|circshift(bce,nx)));
 	%bcs = bcs|(bcci&(circshift(bcs,-1)|circshift(bcs,1)));
 	%bcn = bcn|(bcci&(circshift(bcn,-1)|circshift(bcn,1)));
-	bcc = bcc|bcci;
+	bcc = bcco|bcci;
+	
 	
 	for i = 1:numel(wesnc)
 		eval(['dbcfull.' wesnc{i} '= bc' wesnc{i} ';']);

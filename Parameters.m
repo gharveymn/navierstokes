@@ -28,7 +28,7 @@ function par = Parameters
 	par.ghostpoints = false;
 	par.streamfunction = true;
 	par.order = 2;
-	par.dt = 0.01;
+	par.dt = 0.1;
 	par.tf = 200;
 	par.usestagger = true;
 	
@@ -39,7 +39,7 @@ function par = Parameters
 	par.omega = 0.5;
 	
 	%plotting parameters
-	par.toPlot = 1;						%1==normal, 2==debug
+	par.toPlot = 2;						%1==normal, 2==debug, 3==special
 	par.filter = false;
 	par.numfilter = 1;
 	par.conlines = 30;
@@ -64,7 +64,7 @@ function par = Parameters
 	par.ddsolver = @DDMSch;
 	par.nssolver = @NSPrim;
 	par.gridmaker = @MakeStaggeredGrids;
-	par.model = @symchlong;
+	par.model = @pipe;
 	
 	
 	if(par.debug)
