@@ -64,7 +64,7 @@ function par = Parameters
 	par.ddsolver = @DDMSch;
 	par.nssolver = @NSPrim;
 	par.gridmaker = @MakeStaggeredGrids;
-	par.model = @pipe;
+	par.model = @symchlong;
 	
 	
 	if(par.debug)

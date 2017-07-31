@@ -54,7 +54,11 @@ function [rhs,bcio] = bcu(grids,filtering,rhs,par,side)
 	rhs = rhs + out;
 	
 	% set rest
-	rhs((~(effeq(xmesh,inflowx) | effeq(xmesh,outflowx))|filtering.u.(side).dbc.c) & on) = 0;
+	if(strcmp(side,'outer'))
+		rhs((~(effeq(xmesh,inflowx) | effeq(xmesh,outflowx))|filtering.u.(side).dbc.c) & on) = 0;
+	else
+		rhs(~(effeq(xmesh,inflowx) | effeq(xmesh,outflowx)) & on) = 0;
+	end
 	
 	bcio = (xmesh==inflowx|xmesh==outflowx)&on;
 end

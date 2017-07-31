@@ -63,13 +63,13 @@ function InitialPlot(grids,filtering,res,par)
 		
 		figure(1)
 		clf
-		figs.f1 = surf(grids.q.outer.Xmesh,grids.q.outer.Ymesh,Ue);
+		figs.f1 = surf(grids.q.inner.Xmesh,grids.q.inner.Ymesh,U);
 		axis(ax)
 		title('$U$','interpreter','latex','FontSize',20)
 		
 		figure(2)
 		clf
-		figs.f2 = surf(grids.q.outer.Xmesh,grids.q.outer.Ymesh,Ve);
+		figs.f2 = surf(grids.q.inner.Xmesh,grids.q.inner.Ymesh,V);
 		axis(ax)
 		title('$V$','interpreter','latex','FontSize',20)
 		
@@ -81,7 +81,7 @@ function InitialPlot(grids,filtering,res,par)
 		
 		figure(4)
 		clf
-		figs.f4 = surf(grids.q.outer.Xmesh,grids.q.outer.Ymesh,Qe);
+		figs.f4 = surf(grids.q.inner.Xmesh,grids.q.inner.Ymesh,Q);
 		axis(ax)
 		title('$Q$','interpreter','latex','FontSize',20)
 		
@@ -190,10 +190,10 @@ function Update(grids,filtering,res,par)
 
 		elseif(par.toPlot == 2)
 			
-			set(figs.f1,'ZData',Ue);
-			set(figs.f2,'ZData',Ve);
+			set(figs.f1,'ZData',U);
+			set(figs.f2,'ZData',V);
 			set(figs.f3,'ZData',P);
-			set(figs.f4,'ZData',Qe);
+			set(figs.f4,'ZData',Q);
 			
 		elseif(par.toPlot == 3)
 

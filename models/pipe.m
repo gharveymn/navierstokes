@@ -1,6 +1,6 @@
 function par = pipe(par)
 	par.mapfile = 'rect.txt';
-	par.bcfunc = @BCConIO;
+	par.bcfunc = @BCSymChNS;
 	par.hx = 0.05;
 	par.hy = 0.01;
 	par.Re = 1000;
