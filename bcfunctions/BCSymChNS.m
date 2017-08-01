@@ -50,11 +50,11 @@ function [rhs,bcio] = bcu(grids,filtering,rhs,par,side)
 	centerout = outflowmin + D;
 	
 	e = (4*a*d^3/3)*3/(4*D^3);
+	f = e*(D^2.*(outflowmax-centerout) - (outflowmax-centerout).^3./3);
 	
 	outflowx = xmax*ones(numel(xmesh),1);
-	out = e*(D^2 - (ymesh-centerout).^2);
+	out = (e*(D^2.*(outflowmax-centerout) - (outflowmax-centerout).^3./3) + f)/(2*D)*ones(numel(xmesh),1);
 	out(~(xmesh==outflowx) | ~on) = 0;
-	
 	rhs = rhs + out;
 	
 	% set rest

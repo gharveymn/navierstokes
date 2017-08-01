@@ -88,18 +88,18 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	QUbcE = 0*reshape(filtering.q.outer.filterMat'*rhs.q.outer,[nx+1,ny+1])';
 	QVbcE = QUbcE;
 	
-	Lp = laplacian2(nx,ny,hx,hy,1,1,1,1,pdbcfull.w|pdbcfull.e|pdbcfull.ci,pdbcfull.s|pdbcfull.n,filtering.p.inner.bciofull,-1);
+	Lp = laplacian2(nx,ny,hx,hy,1,1,1,1,pdbcfull.w|pdbcfull.e,pdbcfull.s|pdbcfull.n,filtering.p.inner.bciofull,-1);
 	Lp = filtering.p.inner.filterMat*Lp*filtering.p.inner.filterMat';
 	Lp(1,1) = 3/2*Lp(1,1);
-	Lp(filtering.p.inner.dbc.ci,filtering.p.inner.dbc.ci) = 3/2*Lp(filtering.p.inner.dbc.ci,filtering.p.inner.dbc.ci);
+	%Lp(filtering.p.inner.dbc.ci,filtering.p.inner.dbc.ci) = 3/2*Lp(filtering.p.inner.dbc.ci,filtering.p.inner.dbc.ci);
 	perp = symamd(Lp); Rp = chol(Lp(perp,perp)); Rpt = Rp';
 	
-	Lu = laplacian2(nx-1,ny,hx,hy,2,1,2,1,udbcfull.w|udbcfull.e|udbcfull.ci,udbcfull.s|udbcfull.n,filtering.u.inner.bciofull,-1);
+	Lu = laplacian2(nx-1,ny,hx,hy,2,1,2,1,udbcfull.w|udbcfull.e,udbcfull.s|udbcfull.n,filtering.u.inner.bciofull,-1);
 	Lu = par.dt/par.Re*Lu + speye(size(Lu,1));
 	Lu = filtering.u.inner.filterMat*Lu*filtering.u.inner.filterMat';
 	peru = symamd(Lu); Ru = chol(Lu(peru,peru)); Rut = Ru';
 	
-	Lv = laplacian2(nx,ny-1,hx,hy,1,2,2,1,vdbcfull.w|vdbcfull.e|vdbcfull.ci,vdbcfull.s|vdbcfull.n,filtering.v.inner.bciofull,-1);
+	Lv = laplacian2(nx,ny-1,hx,hy,1,2,2,1,vdbcfull.w|vdbcfull.e,vdbcfull.s|vdbcfull.n,filtering.v.inner.bciofull,-1);
 	Lv = par.dt/par.Re*Lv + speye(size(Lv,1));
 	Lv = filtering.v.inner.filterMat*Lv*filtering.v.inner.filterMat';
 	perv = symamd(Lv); Rv = chol(Lv(perv,perv)); Rvt = Rv';
@@ -315,7 +315,7 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 				%b = res.U;
 				res.P = P;
 				Qu = cumsum(res.U*hy);
-				%Qv = -cumsum(res.V'*hx)';
+				Qv = -cumsum(res.V'*hx)';
 				res.Q = Qu;
 				
 				res.Qe = cumsum(res.Ue*hy);
