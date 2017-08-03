@@ -1,177 +1,156 @@
-function figs = Plot(mat,vec,par,figs)
-	
-	if(nargin == 3)
-		figs = InitialPlot(mat,vec,par);
+function figs = Plot(grids,filtering,res,par,figs)
+	set(gcf, 'renderer', 'zbuffer')
+	if(~exist('figs','var'))
+		figs = InitialPlot(grids,filtering,res,par);
 	else
 		%update if we already initialized the plots
-		figs = Update(mat,vec,par,figs);
+		figs = Update(grids,filtering,res,par,figs);
 	end
 end
 
-function figs = InitialPlot(mat,vec,par)
+function figs = InitialPlot(grids,filtering,res,par)
 	
-	X = mat(:,:,1);
-	Y = mat(:,:,2);
-	U = mat(:,:,3);
-	V = mat(:,:,4);
-	Q = mat(:,:,5);
-	
-	x = vec(:,1);
-	y = vec(:,2);
-	u = vec(:,3);
-	v = vec(:,4);
-	q = vec(:,5);
-	
-	ax = MakeAxis(x,y);
-	
-	if(par.toPlot == 1)
-		%surf
-		
-		figure(1)
-		f1 = surf(X,Y,U,'edgecolor','none','facecolor','interp');
-		axis(ax)
-		title('$u$','interpreter','latex','FontSize',20)
+	U = res.U;
+	V = res.V;
+	Q = res.Q;
+	ax = MakeAxis(grids.inner.Xmesh,grids.inner.Ymesh);
 
-		figure(2)
-		f2 = surf(X,Y,V,'edgecolor','none','facecolor','interp');
-		axis(ax)
-		title('$v$','interpreter','latex','FontSize',20)
-		
-		figure(3)
-		f3 = surf(X,Y,Q,'edgecolor','none','facecolor','interp');
-		%f3 = contour(X,Y,Q);
-		axis(ax)
-		title('$\psi$','interpreter','latex','FontSize',20)
-		
-		figs = {f1,f2,f3};
-		
-	elseif(par.toPlot == 2)
-		%quiver
+	if(par.toPlot == 1)
 		
 		figure(1)
-		ax = MakeAxis(X,Y);
-		f1 = quiver(x,y,u,v);
+		clf
+		hold on
+		%surf
+		figs.f11 = surf(grids.outer.Xmesh,grids.outer.Ymesh,Q,'edgecolor','none','facecolor','interp');
+		%quiver
+		figs.f12 = quiver3(grids.outer.Xmesh,grids.outer.Ymesh,max(max(Q))*ones(size(U)),U,V,zeros(size(U)),par.quivVectSca,'k-');
 		axis(ax)
 		title('velocity vector field')
+		hold off
 
-		figure(2)
-		ax = MakeAxis(X,Y);
-		clrs = abs(q)./max(abs(q(isfinite(q))));
-		f2 = scatter3(x,y,q,10,[clrs zeros(numel(clrs),1) 1-clrs], '.');
-		axis(ax)
-		title('$\psi$','interpreter','latex','FontSize',20)
-		
-		figs = {f1,f2};
-		
-	elseif(par.toPlot == 3)
-		%scatter
-		
-		figure(1)
-		clrs = MakeClrs(u);
-		f1 = scatter3(x,y,u,10,clrs,'.');
-		axis(ax)
-		title('$u$','interpreter','latex','FontSize',20)
-
-		figure(2)
-		clrs = MakeClrs(v);
-		f2 = scatter3(x,y,v,10,clrs,'.');
-		axis(ax)
-		title('$v$','interpreter','latex','FontSize',20)
-
-		figure(3)
-		clrs = MakeClrs(q);
-		f3 = scatter3(x,y,q,10,clrs,'.');
-		axis(ax)
-		title('$\psi$','interpreter','latex','FontSize',20)
-		
-		figs = {f1,f2,f3};
-		
-	elseif(par.toPlot == 4)
 		%contour
-		
-		figure(1)
-		[C1,h1] = contour(X,Y,U,par.conlines);
-		f1 = {C1,h1};
+
+		figure(2)
+		clf
+		[C1,h1] = contour(grids.outer.Xmesh,grids.outer.Ymesh,U,par.conlines);
+		figs.f2 = {C1,h1};
 		axis(ax)
 		title('$u$','interpreter','latex','FontSize',20)
 
-		figure(2)
-		[C2,h2] = contour(X,Y,V,par.conlines);
-		f2 = {C2,h2};
+		figure(3)
+		clf
+		[C2,h2] = contour(grids.outer.Xmesh,grids.outer.Ymesh,V,par.conlines);
+		figs.f3 = {C2,h2};
 		axis(ax)
 		title('$v$','interpreter','latex','FontSize',20)
-		
-		figure(3)
-		[C3,h3] = contour(X,Y,Q,par.conlines);
-		f3 = {C3,h3};
+
+		figure(4)
+		clf
+		[C3,h3] = contour(grids.outer.Xmesh,grids.outer.Ymesh,Q,par.conlines);
+		figs.f4 = {C3,h3};
 		axis(ax)
 		title('$\psi$','interpreter','latex','FontSize',20)
 		
-		figs = {f1,f2,f3};
+	elseif(par.toPlot == 2)
 		
+		figure(1)
+		clf
+		figs.f1 = surf(grids.outer.Xmesh,grids.outer.Ymesh,U);
+		axis(ax)
+		title('$U$','interpreter','latex','FontSize',20)
+		
+		figure(2)
+		clf
+		figs.f2 = surf(grids.outer.Xmesh,grids.outer.Ymesh,V);
+		axis(ax)
+		title('$V$','interpreter','latex','FontSize',20)
+		
+		figure(3)
+		clf
+		figs.f3 = surf(grids.outer.Xmesh,grids.outer.Ymesh,Q);
+		axis(ax)
+		title('$Q$','interpreter','latex','FontSize',20)
+	
 	end
 	
 	drawnow;
 	
+	figure(1)
+	
 end
 
-function figs = Update(mat,vec,par,figs)
+function figs = Update(grids,filtering,res,par,figs)
 	
 	lastwarn('')
 	
 	try
-		U = mat(:,:,3);
-		V = mat(:,:,4);
-		Q = mat(:,:,5);
-
-		u = vec(:,3);
-		v = vec(:,4);
-		q = vec(:,5);
-
+		U = res.U;
+		V = res.V;
+		Q = res.Q;
+		
 		if(par.toPlot == 1)
 
-			set(figs{1},'ZData',U);
-			set(figs{2},'ZData',V);
-			set(figs{3},'ZData',Q);
+			set(figs.f11,'ZData',Q);
+			set(figs.f12,'ZData',max(max(Q))*ones(size(U)));
+			set(figs.f12,'UData',U);
+			set(figs.f12,'VData',V);
+			umax = max(max(U));
+			umin = min(min(U));
+			
+			vmax = max(max(V));
+			vmin = min(min(V));
+			
+% 			pmax = max(max(P));
+% 			pmin = min(min(P));
+			
+			qmax = max(max(Q));
+			qmin = min(min(Q));
+			
+			set(figs.f2{2},'LevelList',linspace(umax,umin,par.conlines));
+ 			set(figs.f2{2},'ZData',U);
+			
+			set(figs.f3{2},'LevelList',linspace(vmax,vmin,par.conlines));
+ 			set(figs.f3{2},'ZData',V);
+			
+			set(figs.f4{2},'LevelList',linspace(qmax,qmin,par.conlines));
+ 			set(figs.f4{2},'ZData',Q);
+
+% 			ax = MakeAxis(grids.q.inner.Xmesh,grids.q.inner.Ymesh);
+% 
+% 			figure(3)
+% 			[C1,h1] = contour(grids.u.inner.Xmesh,grids.u.inner.Ymesh,U,par.conlines);
+% 			figs.f3 = {C1,h1};
+% 			axis(ax)
+% 			title('$u$','interpreter','latex','FontSize',20)
+% 
+% 			figure(4)
+% 			[C2,h2] = contour(grids.v.inner.Xmesh,grids.v.inner.Ymesh,V,par.conlines);
+% 			figs.f4 = {C2,h2};
+% 			axis(ax)
+% 			title('$v$','interpreter','latex','FontSize',20)
+% 
+% 			figure(5)
+% 			[C3,h3] = contour(grids.q.inner.Xmesh,grids.q.inner.Ymesh,Q,par.conlines);
+% 			figs.f5 = {C3,h3};
+% 			axis(ax)
+% 			title('$\psi$','interpreter','latex','FontSize',20)
 
 		elseif(par.toPlot == 2)
-
-			set(figs{1},'UData',u);
-			set(figs{1},'VData',v);
-
-			clrs = MakeClrs(q);
-			set(figs{2},'ZData',q);
-			set(figs{2},'CData',clrs);
-
-		elseif(par.toPlot == 3)
-
-			clrs = MakeClrs(u);
-			set(figs{1},'ZData',u);
-			set(figs{1},'CData',clrs);
-
-			clrs = MakeClrs(v);
-			set(figs{2},'ZData',v);
-			set(figs{2},'CData',clrs);
-
-			clrs = MakeClrs(q);
-			set(figs{3},'ZData',q);
-			set(figs{3},'CData',clrs);
-			
-		elseif(par.toPlot == 4)
-			set(figs{1}{2},'ZData',U);
-			set(figs{2}{2},'ZData',V);
-			set(figs{3}{2},'ZData',Q);
+			set(figs.f1,'ZData',U);
+			set(figs.f2,'ZData',V);
+			set(figs.f3,'ZData',Q);
 		end
 
 		drawnow;
 		
 	catch ME
+		%throw(ME)
 		disp('Couldn''t update one of the figures; we''ll try to make new ones')
-		figs = InitialPlot(mat,vec,par);
+		figs = InitialPlot(grids,filtering,res,par);
 	end
 	
 	if(~isempty(lastwarn))
-		figs = InitialPlot(mat,vec,par);
+		figs = InitialPlot(grids,filtering,res,par);
 	end
 	
 end
@@ -196,6 +175,3 @@ function clrs = MakeClrs(v)
 	clr = abs(v)./norm(v(isfinite(v)),inf);
 	clrs = [clr zeros(numel(clr),1) 1-clr];
 end
-
-
-

@@ -1,31 +1,50 @@
-function [rhs,bcio] = BCSymChNS(grids,filtering,rhs,par)
+function [rhs,filtering] = BCDrivCav(grids,filtering,rhs,par)
+	
+	for i=1:numel(par.varnames)
+		
+		bcf = str2func(['bc' par.varnames{i}]);
+		
+		[rhs.(par.varnames{i}).inner,filtering.(par.varnames{i}).inner.bcio] = bcf(grids,filtering,rhs.(par.varnames{i}).inner,par,'inner');
+		filtering.(par.varnames{i}).inner.bciofull = logical(filtering.(par.varnames{i}).inner.filterMat'*(1*filtering.(par.varnames{i}).inner.bcio));
+		
+		[rhs.(par.varnames{i}).outer,filtering.(par.varnames{i}).outer.bcio] = bcf(grids,filtering,rhs.(par.varnames{i}).outer,par,'outer');
+		filtering.(par.varnames{i}).outer.bciofull = logical(filtering.(par.varnames{i}).outer.filterMat'*(1*filtering.(par.varnames{i}).outer.bcio));
+	
+	end
+	
+end
+
+function [rhs,bcio] = bcu(grids,filtering,rhs,par,side)
 	
 	flowrate = 1;
 	
-	xmesh = grids.xmesh;
-	ymesh = grids.ymesh;
-	nxp1 = par.nxp1;
-	valind = filtering.valind;
+	on = filtering.u.(side).on;
 	
-	on = filtering.on;
-	onfull = filtering.onfull;
-	dbcfull = filtering.dbcfull;
-	gpca = filtering.gp;
-	
-	h = par.h;
-	
-	xmax = max(xmesh(on));
-	xmin = min(xmesh(on));
-	ymax = max(ymesh(on));
-	ymin = min(ymesh(on));
+	ymax = max(grids.u.(side).yinit);
 	
 	% driven flow
 	drivy = ymax*ones(numel(on),1);
 	in = ones(numel(on),flowrate);
-	in(~(ymesh==drivy)) = 0;
+	in(~(grids.u.(side).ymesh==drivy)) = 0;
 	
 	rhs = rhs + in;
 	
+	bcio = on&~on;
+	
+end
+
+function [rhs,bcio] = bcv(grids,filtering,rhs,par,side)
+	on = filtering.v.(side).on;
+	bcio = on&~on;
+end
+
+function [rhs,bcio] = bcp(grids,filtering,rhs,par,side)
+	on = filtering.p.(side).on;
+	bcio = on&~on;
+end
+
+function [rhs,bcio] = bcq(grids,filtering,rhs,par,side)
+	on = filtering.q.(side).on;
 	bcio = on&~on;
 end
 

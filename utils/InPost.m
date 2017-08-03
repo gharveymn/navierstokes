@@ -1,17 +1,17 @@
-function [figs,mat,vec] = InPost(qmesh,grids,filtering,par,figs)
+function [res,figs] = InPost(qmesh,grids,filtering,par,figs)
 	%INPOST does the post processing of calculation
 	
 	h = par.h;
-	qmeshfull = filtering.filterMat'*qmesh;
+	qmeshfull = filtering.outer.filterMat'*qmesh;
 	
-	nx = grids.nxp1;
-	ny = grids.nyp1;
+	nx = par.nx;
+	ny = par.ny;
 	
 	%TODO change so that derivatives are cool at boundaries
 	if(par.ghostpoints)
 		
 % 		%TODO figure out how to get back our q at the right size
-		filterMat = filtering.filterMat;
+		filterMat = filtering.outer.filterMat;
 		on = filtering.on;
 		
 		bcxd = logical(filterMat*(1*bcxdfull));
@@ -36,21 +36,18 @@ function [figs,mat,vec] = InPost(qmesh,grids,filtering,par,figs)
 
 		
 	else
-		filterMat = filtering.filterMat;
-		valind = filtering{2};
-		on = filtering.on;
-		onfull = filtering.onfull;
+		filterMat = filtering.outer.filterMat;
 		
 		%Switch to first order on the boundary
-		dbc = boundarysides(grids,filtering);
+		dbc = boundarysides(grids,filtering,par,'outer',nx);
 		bcw = dbc.w;
 		bce = dbc.e;
 		bcs = dbc.s;
 		bcn = dbc.n;
 		bcc = dbc.c;
 
-		Dx = sptoeplitz([0 -1],[0 1],nx)./(2*h);
-		dx = kron(speye(ny),Dx);
+		Dx = sptoeplitz([0 -1],[0 1],nx+1)./(2*h);
+		dx = kron(speye(ny+1),Dx);
 		dx = filterMat*dx*filterMat';
 		
 		if(par.zeroout)
@@ -60,8 +57,8 @@ function [figs,mat,vec] = InPost(qmesh,grids,filtering,par,figs)
 			dx = spdiag(~bce)*dx + 1/h*(-spdiag(bce(2:end),-1) + spdiag(bce));
 		end
 
-		Dy = sptoeplitz([0 -1],[0 1],ny)./(2*h);
-		dy = kron(Dy,speye(nx));
+		Dy = sptoeplitz([0 -1],[0 1],ny+1)./(2*h);
+		dy = kron(Dy,speye(nx+1));
 		dy = filterMat*dy*filterMat';
 		
 		if(par.zeroout)
@@ -76,23 +73,19 @@ function [figs,mat,vec] = InPost(qmesh,grids,filtering,par,figs)
 	vmesh = -dx*qmesh;
 	
 	umeshfull = filterMat'*umesh;
-	Umesh = reshape(umeshfull,[nx,ny])';
+	res.U = reshape(umeshfull,[nx+1,ny+1])';
 	
 	vmeshfull = filterMat'*vmesh;
-	Vmesh = reshape(vmeshfull,[nx,ny])';
+	res.V = reshape(vmeshfull,[nx+1,ny+1])';
 	
 	qmeshfull = filterMat'*qmesh;
-	Qmesh = reshape(qmeshfull,[nx,ny])';
-	
-	% use matrices rather than cell arrays so they throw a dimension error if we have a bug mismatched
-	mat = cat(3,grids.inner.Xmesh,grids.inner.Ymesh,Umesh,Vmesh,Qmesh);
-	vec = cat(2,grids.inner.xmesh,grids.inner.ymesh,umesh,vmesh,qmesh);
+	res.Q = reshape(qmeshfull,[nx+1,ny+1])';
 	
 	if(par.plot)
 		if(exist('figs','var'))
-			figs = Plot(mat,vec,par,figs);
+			figs = Plot(grids,filtering,res,par,figs);
 		else
-			figs = Plot(mat,vec,par);
+			figs = Plot(grids,filtering,res,par);
 		end
 	end
 	

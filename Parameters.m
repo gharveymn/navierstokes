@@ -15,27 +15,31 @@ function par = Parameters
 	
 	%set true to switch to ParametersDebug
 	par.debug = false;
-	
 	par.useGPU = false;
+	
+	par.varnames = {'u','v','p','q'};
+	par.wesn = {'w','e','s','n'};
 	
 	par.maptype = 'g';
 	par.mapfile = 'symch.txt';
 	par.h = 0.05;
+	par.hx = 0.05;
+	par.hy = 0.05;
 	par.ghostpoints = false;
 	par.streamfunction = true;
 	par.order = 2;
-	par.dt = 0.01;
-	par.tf = 40;
-	par.timesteps = round(par.tf/par.dt);
+	par.dt = 0.1;
+	par.tf = 200;
 	par.usestagger = true;
 	
 	%flow parameters
 	par.inflowAmp = 1;
 	par.nu = 1;							%kinematic viscosity
 	par.Re = 1e2;							%default value
+	par.omega = 0.5;
 	
 	%plotting parameters
-	par.toPlot = 1;						%1==normal, 2==debug
+	par.toPlot = 1;						%1==normal, 2==debug, 3==special
 	par.filter = false;
 	par.numfilter = 1;
 	par.conlines = 30;
@@ -43,6 +47,7 @@ function par = Parameters
 	par.plot = true;
 	par.quivVectSca = .1*(par.h/0.05);
 	par.plotoniter = 100;
+	par.noplot = false;
 	
 	%domain decomposition parameters
 	par.ddrun = false;
@@ -58,13 +63,16 @@ function par = Parameters
 	par.ddsolver = @DDMSch;
 	par.nssolver = @NSPrim;
 	par.gridmaker = @MakeStaggeredGrids;
-	par.model = @symch;
+	par.model = @step;
 	
 	if(par.debug)
 		par = ParametersDebug;
 	end
 
 	par = par.model(par);
+	
+	par.timesteps = round(par.tf/par.dt);
+	
 	
 end
 

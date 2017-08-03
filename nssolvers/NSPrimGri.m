@@ -1,4 +1,4 @@
-function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
+function [grids,filtering,res,par] = NSPrimGri(par,grids,filtering,rhs)
 	%NSPRIM Strang primitive formulation of NS
 	
 	if(~exist('par','var'))
@@ -88,18 +88,18 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	QUbcE = 0*reshape(filtering.q.outer.filterMat'*rhs.q.outer,[nx+1,ny+1])';
 	QVbcE = QUbcE;
 	
-	Lp = laplacian2(nx,ny,hx,hy,1,1,1,1,pdbcfull.w|pdbcfull.e,pdbcfull.s|pdbcfull.n,filtering.p.inner.bciofull,-1);
+	Lp = laplacian2(nx,ny,hx,hy,1,1,1,1,pdbcfull.w|pdbcfull.e|pdbcfull.ci,pdbcfull.s|pdbcfull.n,filtering.p.inner.bciofull,-1);
 	Lp = filtering.p.inner.filterMat*Lp*filtering.p.inner.filterMat';
 	Lp(1,1) = 3/2*Lp(1,1);
-	%Lp(filtering.p.inner.dbc.ci,filtering.p.inner.dbc.ci) = 3/2*Lp(filtering.p.inner.dbc.ci,filtering.p.inner.dbc.ci);
+	Lp(filtering.p.inner.dbc.ci,filtering.p.inner.dbc.ci) = 3/2*Lp(filtering.p.inner.dbc.ci,filtering.p.inner.dbc.ci);
 	perp = symamd(Lp); Rp = chol(Lp(perp,perp)); Rpt = Rp';
 	
-	Lu = laplacian2(nx-1,ny,hx,hy,2,1,2,1,udbcfull.w|udbcfull.e,udbcfull.s|udbcfull.n,filtering.u.inner.bciofull,-1);
+	Lu = laplacian2(nx-1,ny,hx,hy,2,3,2,1,udbcfull.w|udbcfull.e|udbcfull.ci,udbcfull.s|udbcfull.n,filtering.u.inner.bciofull,-1);
 	Lu = par.dt/par.Re*Lu + speye(size(Lu,1));
 	Lu = filtering.u.inner.filterMat*Lu*filtering.u.inner.filterMat';
 	peru = symamd(Lu); Ru = chol(Lu(peru,peru)); Rut = Ru';
 	
-	Lv = laplacian2(nx,ny-1,hx,hy,1,2,2,1,vdbcfull.w|vdbcfull.e,vdbcfull.s|vdbcfull.n,filtering.v.inner.bciofull,-1);
+	Lv = laplacian2(nx,ny-1,hx,hy,3,2,3,1,vdbcfull.w|vdbcfull.e|vdbcfull.ci,vdbcfull.s|vdbcfull.n,filtering.v.inner.bciofull,-1);
 	Lv = par.dt/par.Re*Lv + speye(size(Lv,1));
 	Lv = filtering.v.inner.filterMat*Lv*filtering.v.inner.filterMat';
 	perv = symamd(Lv); Rv = chol(Lv(perv,perv)); Rvt = Rv';
@@ -107,6 +107,13 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	Lq = laplacian2(nx-1,ny-1,hx,hy,2,2,2,1,qdbcfull.w|qdbcfull.e|qdbcfull.ci,qdbcfull.s|qdbcfull.n,filtering.q.inner.bciofull,-1);
 	Lq = filtering.q.inner.filterMat*Lq*filtering.q.inner.filterMat';
 	perq = symamd(Lq); Rq = chol(Lq(perq,perq)); Rqt = Rq';
+	
+	Lu1 = laplacian2(nx+1,ny+2,hx,hy,2,2,2,1,udbcfullE.w|udbcfullE.e|udbcfullE.ci,udbcfullE.s|udbcfullE.n,filtering.u.outer.bciofull,1);
+	Lu1 = filtering.u.outer.filterMat*Lu1*filtering.u.outer.filterMat';	
+	
+	Lv1 = laplacian2(nx+2,ny+1,hx,hy,2,2,2,1,vdbcfullE.w|vdbcfullE.e|vdbcfullE.ci,vdbcfullE.s|vdbcfullE.n,filtering.v.outer.bciofull,1);
+	Lv1 = filtering.v.outer.filterMat*Lv1*filtering.v.outer.filterMat';
+	
 	
 	if(par.useGPU)
 		
@@ -124,6 +131,7 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 		
 		res.Ugpu = gpuArray(grids.q.inner.Xmesh*0);
 		res.Vgpu = res.Ugpu;
+		
 	end
 	
 	
@@ -190,6 +198,7 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 		% nonlinear terms/explicit convection
 		gamma = min(1.2*par.dt*max(max(max(abs(U)))/hx,max(max(abs(V)))/hy),1);
 		
+		
 		Ue(uValMatInE) = U(uValMat);
 		Ue(uselEw|uselEe) = UbcE(uselEw|uselEe);
 		Ue(UdbcfullE.n|UdbcfullE.s) = 2*UbcE(UdbcfullE.n|UdbcfullE.s)-Ue(Uselin.N|Uselin.S);
@@ -197,6 +206,14 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 		Ve(vValMatInE) = V(vValMat);
 		Ve(vselEs|vselEn) = VbcE(vselEs|vselEn);
 		Ve(VdbcfullE.w|VdbcfullE.e) = 2*VbcE(VdbcfullE.w|VdbcfullE.e)-Ve(Vselin.W|Vselin.E);
+		
+		LapUe = reshape((1*filtering.u.outer.filterMat')*(par.dt/par.Re*Lu1*((1*filtering.u.outer.filterMat)*reshape(Ue',[],1))),nx+1,ny+2)';
+		LapU = LapUe(2:end-1,2:end-1);
+		LapU(~uValMat) = 0;
+		
+		LapVe = reshape((1*filtering.v.outer.filterMat')*(par.dt/par.Re*Lv1*((1*filtering.v.outer.filterMat)*reshape(Ve',[],1))),nx+2,ny+1)';
+		LapV = LapVe(2:end-1,2:end-1);
+		LapV(~vValMat) = 0;
 		
 		Ua = mvgavg(Ue);
 		Ud = diff(Ue)/2;
@@ -221,35 +238,24 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 		U2x = diff((Ua.^2-gamma*abs(Ua).*Ud)')'/hx;
 		V2y = diff((Va.^2-gamma*abs(Va).*Vd))/hy;
 		
-		U = U-par.dt*(UVy(:,2:end-1)+U2x);
-		V = V-par.dt*(UVx(2:end-1,:)+V2y);
-		
-		% implicit diffusion
-		rhsu = reshape((U+Ubc)',[],1);
-		rhsu = rhsu(filtering.u.inner.valind);
-		u(peru,1) = (Ru\(Rut\rhsu(peru)));
-		U = reshape((1*filtering.u.inner.filterMat')*u,nx-1,ny)';
-		
-		rhsv = reshape((V+Vbc)',[],1);
-		rhsv = rhsv(filtering.v.inner.valind);
-		v(perv,1) = (Rv\(Rvt\rhsv(perv)));
-		V = reshape((1*filtering.v.inner.filterMat')*v,nx,ny-1)';
+		F = U - par.dt*(UVy(:,2:end-1)+U2x) + LapU;
+		G = V - par.dt*(UVx(2:end-1,:)+V2y) + LapV;
 		
 		% pressure correction
 		Uep = Ue;
-		Uep(uValMatInE) = U(uValMat);
+		Uep(uValMatInE) = F(uValMat);
 		Ue(uselEw|uselEe) = UbcE(uselEw|uselEe);
 		Uep(UdbcfullE.s|UdbcfullE.n) = 0;
 		Uep = Uep(2:end-1,:);
 		
 		Vep = Ve;
-		Vep(vValMatInE) = V(vValMat);
+		Vep(vValMatInE) = G(vValMat);
 		Vep(vselEs|vselEn) = VbcE(vselEs|vselEn);
 		Vep(VdbcfullE.w|VdbcfullE.e) = 0;
 		Vep = Vep(:,2:end-1);
 		
 		rhsp = reshape((diff(Uep')'/hx+diff(Vep)/hy)',[],1);
-		rhsp = 1/par.dt*rhsp(filtering.p.inner.valind);
+		rhsp = rhsp(filtering.p.inner.valind);
 		p(perp,1) = -(Rp\(Rpt\rhsp(perp)));
 		P = reshape((1*filtering.p.inner.filterMat')*p,nx,ny)';
 % 		P(Pselin.NW.c) = (P(Pselin.NW.N)+P(Pselin.NW.W))/2;
@@ -260,11 +266,11 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 % 		P(Pselin.SW.c) = 2*P(Pselin.SW.S) - P(circshift(Pselin.SW.S,1));
 		
 		Px = diff(P')'/hx;
-		Px(Pxsel) = 0;
+		%Px(Pxsel) = 0;
 		Py = diff(P)/hy;
-		Py(Pysel) = 0;
-		U = U-par.dt*Px;
-		V = V-par.dt*Py;
+		%Py(Pysel) = 0;
+		U = U-Px;
+		V = V-Py;
 		
 		Ue(uValMatInE) = U(uValMat);
 		Ve(vValMatInE) = V(vValMat);
@@ -315,7 +321,7 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 				%b = res.U;
 				res.P = P;
 				Qu = cumsum(res.U*hy);
-				Qv = -cumsum(res.V'*hx)';
+				%Qv = -cumsum(res.V'*hx)';
 				res.Q = Qu;
 				
 				res.Qe = cumsum(res.Ue*hy);

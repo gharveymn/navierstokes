@@ -1,63 +1,70 @@
-function [figs,mat,vec] = NSIter(par,figs,mat,vec,grids,filtering,bc,rhs)
+function [grids,filtering,res,par,figs] = NSIter(par,grids,filtering,rhs,figs)
 	
-	qmesh = vec(:,5);
-	
-	%adjust these
-	R = par.Re;
-	omega = 0.5;
-	
-	filterMat = filtering.filterMat;
-	nx = grids.nxp1;
-	ny = grids.nyp1;
+	filterMat = filtering.outer.filterMat;
+	nx = par.nx;
+	ny = par.ny;
 	h = grids.h;
-	xinit = grids.inner.xinit;
-	yinit = grids.inner.yinit;
-	xmesh = grids.inner.xmesh;
-	ymesh = grids.inner.ymesh;
 	
-	bih = biharmonic2(nx,ny,h,bc{1}{2}{1},bc{1}{2}{2});
+	qOnfullMat = reshape(filtering.inner.onfull,[nx-1,ny-1])';
+	qOnfullMatE = [zeros([ny-1,1]),qOnfullMat,zeros([ny-1,1])];
+	qOnfullMatE = logical([zeros([1,nx+1]);qOnfullMatE;zeros([1,nx+1])]);
+	qOnfullE = reshape(qOnfullMatE',[],1);
+	qOnE = logical(filterMat*(1*qOnfullE));
+	
+	%(nx,ny,h,a11x,a11y,a11io,order,bcwe,bcsn,bcio,posneg)
+	bih = biharmonic2(nx+1,ny+1,h,filtering.outer.dbcfull.w|filtering.outer.dbcfull.e,filtering.outer.dbcfull.s|filtering.outer.dbcfull.n,[],[],1);
 	bih = filterMat*bih*filterMat';
 	
-	lap = laplacian2(nx,ny,h);
+	lap = laplacian2(nx+1,ny+1,h,1,1,1,1,[],[],[],-1);
 	lap = filterMat*lap*filterMat';
 	
-	Dx = sptoeplitz([0 -1],[0 1],nx)./(2*h);
-	dx = kron(speye(ny),Dx);
+	Dx = sptoeplitz([0 -1],[0 1],nx+1)./(2*h);
+	dx = kron(speye(ny+1),Dx);
 	dx = filterMat*dx*filterMat';
 
-	Dy = sptoeplitz([0 -1],[0 1],ny)./(2*h);
-	dy = kron(Dy,speye(nx));
+	Dy = sptoeplitz([0 -1],[0 1],ny+1)./(2*h);
+	dy = kron(Dy,speye(nx+1));
 	dy = filterMat*dy*filterMat';
+	
+	qmesh = grids.outer.xmesh*0;
+	
+	R = 1/par.Re;
+	
+	rhsbc = rhs.outer;
+	%rhsbc(qOnE) = rhs.inner(filtering.inner.on);
 
 	for k = 1:par.timesteps
-		Rnq = R*N(qmesh);
-		inout = (bc{1}{1}{1}|bc{1}{1}{2});
-		Rnq = spdiag(~inout)*Rnq + spdiag(inout)*rhs;
+		Rnq = N(qmesh,R,filtering.outer.on,rhsbc);
 		%add a little noise
-		Rnq = Rnq + 0.1*~inout.*rand(numel(inout),1);
+		%Rnq = Rnq + 0.1*~inout.*rand(numel(inout),1);
 		
 		qnew = qmesh*0;
-% 		for i = 1:ny
-% 			ycurr = yinit(i);
-% 			indices = (ymesh==ycurr);
-% 			RnqSlice = Rnq(indices);
-% 			bihSlice = (bih(indices,:))';
-% 			bihSlice = (bihSlice(indices,:))';
-% 			
-% 			qnew(indices) = bihSlice\RnqSlice;
-% 			
-% 		end
+		ivec = grids.outer.yinit(randperm(numel(grids.outer.yinit)));
+		for i = 1:ny+1
+			ycurr = ivec(i);
+			indices = (grids.outer.ymesh==ycurr);
+			RnqSlice = Rnq(indices);
+			bihSlice = (bih(indices,:))';
+			bihSlice = (bihSlice(indices,:))';
+			
+			qnew(indices) = bihSlice\RnqSlice;
+			
+		end
+		
+		qmesh = (1-par.omega)*qmesh + par.omega*qnew;
 
-		qnew = bih\Rnq;
+		if(exist('figs','var'))
+			[res,figs] = InPost(qmesh,grids,filtering,par,figs);
+		else
+			[res,figs] = InPost(qmesh,grids,filtering,par);
+		end
 		
-		[figs,mat,vec] = InPost(qnew,bc,grids,filtering,par,figs);
-		
-		qmesh = (1-omega)*qnew + omega*qmesh;
 	end
 	
 	
-	function nq = N(q)
-		nq = spdiag(dy*q)*dx*lap*q-spdiag(dx*q)*dy*lap*q;
+	function nq = N(q,R,bc,rhs)
+		nq = R*spdiag(dy*q)*dx*lap*q-spdiag(dx*q)*dy*lap*q;
+		nq(bc) = rhs(bc);
 	end
 end
 
