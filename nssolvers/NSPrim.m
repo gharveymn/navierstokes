@@ -228,12 +228,12 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 		rhsu = reshape((U+Ubc)',[],1);
 		rhsu = rhsu(filtering.u.inner.valind);
 		u(peru,1) = (Ru\(Rut\rhsu(peru)));
-		U = reshape((1*filtering.u.inner.filterMat')*u,nx-1,ny)';
+		U(:,:) = reshape(filtering.u.inner.filterMat'*u,nx-1,ny)';
 		
 		rhsv = reshape((V+Vbc)',[],1);
 		rhsv = rhsv(filtering.v.inner.valind);
 		v(perv,1) = (Rv\(Rvt\rhsv(perv)));
-		V = reshape((1*filtering.v.inner.filterMat')*v,nx,ny-1)';
+		V(:,:) = reshape(filtering.v.inner.filterMat'*v,nx,ny-1)';
 		
 		% pressure correction
 		Uep = Ue;
@@ -251,7 +251,7 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 		rhsp = reshape((diff(Uep')'/hx+diff(Vep)/hy)',[],1);
 		rhsp = 1/par.dt*rhsp(filtering.p.inner.valind);
 		p(perp,1) = -(Rp\(Rpt\rhsp(perp)));
-		P = reshape((1*filtering.p.inner.filterMat')*p,nx,ny)';
+		P(:,:) = reshape(filtering.p.inner.filterMat'*p,nx,ny)';
 % 		P(Pselin.NW.c) = (P(Pselin.NW.N)+P(Pselin.NW.W))/2;
 % 		P(Pselin.NE.c) = (P(Pselin.NE.N)+P(Pselin.NE.E))/2;
 % 		P(Pselin.SW.c) = (P(Pselin.SW.S)+P(Pselin.SW.W))/2;
@@ -325,7 +325,7 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 			
 		end
 		
-		timestr = ['Time step: ' num2str(j*par.dt,'%5.2f') '/' num2str(par.tf,'%5.2f') 's'];
+		timestr = sprintf('Time step: %5.2f/%5.2fs',j*par.dt,par.tf);
 		fprintf([repmat('\b',1,lents) timestr]);
 		lents = numel(timestr);
 		
