@@ -1,6 +1,6 @@
-function par = step(par)
+function par = steplong(par)
 	
-	par.mapfile = 'step.txt';
+	par.mapfile = 'steplong.txt';
 	par.bcfunc = @BCConIO;
 	par.hx = 0.25;
 	par.hy = 0.05;

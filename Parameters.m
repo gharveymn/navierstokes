@@ -42,7 +42,7 @@ function par = Parameters
 	par.toPlot = 1;						%1==normal, 2==debug, 3==special
 	par.filter = false;
 	par.numfilter = 1;
-	par.conlines = 30;
+	par.conlines = 40;
 	par.zeroout = false;
 	par.plot = true;
 	par.quivVectSca = .1*(par.h/0.05);
@@ -63,7 +63,7 @@ function par = Parameters
 	par.ddsolver = @DDMSch;
 	par.nssolver = @NSPrim;
 	par.gridmaker = @MakeStaggeredGrids;
-	par.model = @step;
+	par.model = @steplong;
 	
 	if(par.debug)
 		par = ParametersDebug;
