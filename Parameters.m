@@ -63,7 +63,7 @@ function par = Parameters
 	par.ddsolver = @DDMSch;
 	par.nssolver = @NSPrim;
 	par.gridmaker = @MakeStaggeredGrids;
-	par.model = @steplong;
+	par.model = @step;
 	
 	if(par.debug)
 		par = ParametersDebug;

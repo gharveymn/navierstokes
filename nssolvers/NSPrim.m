@@ -93,12 +93,20 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	dirichletbd = 2;
 	dirichletmidbd = 3;
 	
-	pa11x = neumannbd;
-	pa11y = neumannbd;
-	pa11iox = neumannbd;
-	pa11ioy = neumannbd;
-	Lp = laplacian2(nx,ny,hx,hy,1,-1,pa11x,pa11y,pa11iox,pa11ioy,...
-				pdbcfull.w|pdbcfull.e,pdbcfull.s|pdbcfull.n,filtering.p.inner.bciofull,filtering.p.inner.bciofull);
+	pbcpar.we.inds = pdbcfull.w|pdbcfull.e;
+	pbcpar.sn.inds = pdbcfull.s|pdbcfull.n;
+	pbcpar.io.inds = filtering.p.inner.bciofull;
+	
+	pbcpar.we.a11.x = neumannbd;
+	pbcpar.we.a11.y = neumannbd;
+	
+	pbcpar.sn.a11.x = neumannbd;
+	pbcpar.sn.a11.y = neumannbd;
+	
+	pbcpar.io.a11.x = neumannbd;
+	pbcpar.io.a11.y = neumannbd;
+	
+	Lp = laplacian2(nx,ny,hx,hy,1,-1,pbcpar);
 	Lp = filtering.p.inner.filterMat*Lp*filtering.p.inner.filterMat';
 	Lp(1,1) = 3/2*Lp(1,1);
 	%Lp(filtering.p.inner.dbc.ci,filtering.p.inner.dbc.ci) = 3/2*Lp(filtering.p.inner.dbc.ci,filtering.p.inner.dbc.ci);
@@ -112,33 +120,47 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	ubcpar.we.a11.y = neumannbd;
 	
 	ubcpar.sn.a11.x = neumannbd;
-	ubcpar.sn.a11.y = dirichlet;
+	ubcpar.sn.a11.y = dirichletbd;
 	
-	ubcpar.io.a11.x = 
+	ubcpar.io.a11.x = dirichletbd;
+	ubcpar.io.a11.y = neumannbd;
 	
-	ua11x = dirichletbd;
-	ua11y = dirichletbd;
-	ua11iox = dirichletbd;
-	ua11ioy = neumannbd;
-	Lu = laplacian2(nx-1,ny,hx,hy,1,-1,ua11x,ua11y,ua11iox,ua11ioy...
-				,udbcfull.w|udbcfull.e,udbcfull.s|udbcfull.n,filtering.u.inner.bciofull,filtering.u.inner.bciofull);
+	Lu = laplacian2(nx-1,ny,hx,hy,1,-1,ubcpar);
 	Lu = par.dt/par.Re*Lu + speye(size(Lu,1));
 	Lu = filtering.u.inner.filterMat*Lu*filtering.u.inner.filterMat';
 	peru = symamd(Lu); Ru = chol(Lu(peru,peru)); Rut = Ru';
 	
-	va11x = neumannbd;
-	va11y = neumannbd;
-	va11iox = dirichletbd;
-	va11ioy = neumannbd;
-	Lv = laplacian2(nx,ny-1,hx,hy,1,-1,va11x,va11y,va11io,vdbcfull.w|vdbcfull.e,vdbcfull.s|vdbcfull.n,filtering.v.inner.bciofull);
+	vbcpar.we.inds = vdbcfull.w|vdbcfull.e;
+	vbcpar.sn.inds = vdbcfull.s|vdbcfull.n;
+	vbcpar.io.inds = filtering.v.inner.bciofull;
+	
+	vbcpar.we.a11.x = neumannbd;
+	vbcpar.we.a11.y = neumannbd;
+	
+	vbcpar.sn.a11.x = dirichletbd;
+	vbcpar.sn.a11.y = dirichletbd;
+	
+	vbcpar.io.a11.x = neumannbd;
+	vbcpar.io.a11.y = dirichletbd;	
+	
+	Lv = laplacian2(nx,ny-1,hx,hy,1,-1,vbcpar);
 	Lv = par.dt/par.Re*Lv + speye(size(Lv,1));
 	Lv = filtering.v.inner.filterMat*Lv*filtering.v.inner.filterMat';
 	perv = symamd(Lv); Rv = chol(Lv(perv,perv)); Rvt = Rv';
 	
-	qa11x = dirichletbd;
-	qa11y = dirichletbd;
-	qa11io = dirichletbd;
-	Lq = laplacian2(nx-1,ny-1,hx,hy,1,-1,qa11x,qa11y,qa11io,qdbcfull.w|qdbcfull.e|qdbcfull.ci,qdbcfull.s|qdbcfull.n,filtering.q.inner.bciofull);
+	qbcpar.we.inds = qdbcfull.w|qdbcfull.e;
+	qbcpar.sn.inds = qdbcfull.s|qdbcfull.n;
+	qbcpar.io.inds = filtering.q.inner.bciofull;
+	
+	qbcpar.we.a11.x = dirichletbd;
+	qbcpar.we.a11.y = dirichletbd;
+	
+	qbcpar.sn.a11.x = dirichletbd;
+	qbcpar.sn.a11.y = dirichletbd;
+	
+	qbcpar.io.a11.x = dirichletbd;
+	qbcpar.io.a11.y = dirichletbd;
+	Lq = laplacian2(nx-1,ny-1,hx,hy,1,-1,qbcpar);
 	Lq = filtering.q.inner.filterMat*Lq*filtering.q.inner.filterMat';
 	perq = symamd(Lq); Rq = chol(Lq(perq,perq)); Rqt = Rq';
 	
