@@ -98,13 +98,13 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	pbcpar.io.inds = filtering.p.inner.bciofull;
 	
 	pbcpar.we.a11.x = neumannbd;
-	pbcpar.we.a11.y = neumannbd;
+	pbcpar.we.a11.y = dirichletbd;
 	
-	pbcpar.sn.a11.x = neumannbd;
+	pbcpar.sn.a11.x = dirichletbd;
 	pbcpar.sn.a11.y = neumannbd;
 	
 	pbcpar.io.a11.x = neumannbd;
-	pbcpar.io.a11.y = neumannbd;
+	pbcpar.io.a11.y = dirichletbd;
 	
 	Lp = laplacian2(nx,ny,hx,hy,1,-1,pbcpar);
 	Lp = filtering.p.inner.filterMat*Lp*filtering.p.inner.filterMat';
@@ -117,13 +117,13 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	ubcpar.io.inds = filtering.u.inner.bciofull;
 	
 	ubcpar.we.a11.x = dirichletbd;
-	ubcpar.we.a11.y = neumannbd;
+	ubcpar.we.a11.y = dirichletbd;
 	
 	ubcpar.sn.a11.x = neumannbd;
-	ubcpar.sn.a11.y = dirichletbd;
+	ubcpar.sn.a11.y = neumannbd;
 	
 	ubcpar.io.a11.x = dirichletbd;
-	ubcpar.io.a11.y = neumannbd;
+	ubcpar.io.a11.y = dirichletbd;
 	
 	Lu = laplacian2(nx-1,ny,hx,hy,1,-1,ubcpar);
 	Lu = par.dt/par.Re*Lu + speye(size(Lu,1));
@@ -140,7 +140,7 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	vbcpar.sn.a11.x = dirichletbd;
 	vbcpar.sn.a11.y = dirichletbd;
 	
-	vbcpar.io.a11.x = neumannbd;
+	vbcpar.io.a11.x = dirichletbd;
 	vbcpar.io.a11.y = dirichletbd;	
 	
 	Lv = laplacian2(nx,ny-1,hx,hy,1,-1,vbcpar);
