@@ -119,7 +119,7 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	ubcpar.we.a11.x = dirichletbd;
 	ubcpar.we.a11.y = dirichletbd;
 	
-	ubcpar.sn.a11.x = neumannbd;
+	ubcpar.sn.a11.x = dirichletbd;
 	ubcpar.sn.a11.y = neumannbd;
 	
 	ubcpar.io.a11.x = dirichletbd;
@@ -135,7 +135,7 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	vbcpar.io.inds = filtering.v.inner.bciofull;
 	
 	vbcpar.we.a11.x = neumannbd;
-	vbcpar.we.a11.y = neumannbd;
+	vbcpar.we.a11.y = dirichletbd;
 	
 	vbcpar.sn.a11.x = dirichletbd;
 	vbcpar.sn.a11.y = dirichletbd;

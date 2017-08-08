@@ -7,7 +7,7 @@ function par = step(par)
 	par.Re = 200;
 	par.plotoniter = 100;
 	par.quivVectSca = .1*(sqrt(par.hx^2 + par.hy^2)/0.05);
-	par.dt = 0.1;
+	par.dt = 0.01;
 	par.tf = 100;
 	
 end
