@@ -116,13 +116,13 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	ubcpar.sn.inds = udbcfull.s|udbcfull.n;
 	ubcpar.io.inds = filtering.u.inner.bciofull;
 	
-	ubcpar.we.a11.x = dirichletbd;
+	ubcpar.we.a11.x = dirichletmidbd;
 	ubcpar.we.a11.y = dirichletbd;
 	
 	ubcpar.sn.a11.x = dirichletbd;
 	ubcpar.sn.a11.y = neumannbd;
 	
-	ubcpar.io.a11.x = dirichletbd;
+	ubcpar.io.a11.x = dirichletmidbd;
 	ubcpar.io.a11.y = dirichletbd;
 	
 	Lu = laplacian2(nx-1,ny,hx,hy,1,-1,ubcpar);
@@ -138,7 +138,7 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	vbcpar.we.a11.y = dirichletbd;
 	
 	vbcpar.sn.a11.x = dirichletbd;
-	vbcpar.sn.a11.y = dirichletbd;
+	vbcpar.sn.a11.y = dirichletmidbd;
 	
 	vbcpar.io.a11.x = dirichletbd;
 	vbcpar.io.a11.y = dirichletbd;	
@@ -333,11 +333,11 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 		if((j==1 || mod(j,par.plotoniter)==0)&&~par.noplot)
 			
 			%stream function
-			%rhsq = reshape((diff(U)/hy-diff(V')'/hx)',[],1);
+			rhsq = reshape((diff(U)/hy-diff(V')'/hx)',[],1);
 			%rhsq(filtering.q.inner.onfull) = rhs.q.inner(filtering.q.inner.on);
-			%rhsq = rhsq(filtering.q.inner.valind);
-			%q = Rq\(Rqt\rhsq(perq));
-			%Q = reshape((1*filtering.q.inner.filterMat')*q,nx-1,ny-1)';
+			rhsq = rhsq(filtering.q.inner.valind);
+			q(perq,1) = Rq\(Rqt\rhsq(perq));
+			Q(:,:) = reshape(filtering.q.inner.filterMat'*q,nx-1,ny-1)';
 			
 			[res.Ue,res.Ve] = makeQuiverData(Ue,Ve,QdbcfullE,QUbcE,QVbcE,reshape(filtering.q.outer.valind,[nx+1,ny+1])');
 			
@@ -370,9 +370,10 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 				%a = res.Ue;
 				%b = res.U;
 				res.P = P;
-				Qu = cumsum(res.U*hy);
-				Qv = -cumsum(res.V'*hx)';
-				res.Q = Qu;
+				%Qu = cumsum(res.U*hy);
+				%Qv = -cumsum(res.V'*hx)';
+				%res.Q = Qu;
+				res.Q = Q;
 				
 				res.Qe = cumsum(res.Ue*hy);
 			end

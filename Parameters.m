@@ -39,7 +39,7 @@ function par = Parameters
 	par.omega = 0.5;
 	
 	%plotting parameters
-	par.toPlot = 1;						%1==normal, 2==debug, 3==special
+	par.toPlot = 2;						%1==normal, 2==debug, 3==special
 	par.filter = false;
 	par.numfilter = 1;
 	par.conlines = 40;
@@ -63,7 +63,7 @@ function par = Parameters
 	par.ddsolver = @DDMSch;
 	par.nssolver = @NSPrim;
 	par.gridmaker = @MakeStaggeredGrids;
-	par.model = @step;
+	par.model = @symchlong;
 	
 	if(par.debug)
 		par = ParametersDebug;
