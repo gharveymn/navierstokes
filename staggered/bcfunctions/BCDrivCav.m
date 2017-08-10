@@ -1,20 +1,21 @@
-function [rhs,filtering] = BCDrivCav(grids,filtering,rhs,par)
-	
-	for i=1:numel(par.varnames)
-		
-		bcf = str2func(['bc' par.varnames{i}]);
-		
-		[rhs.(par.varnames{i}).inner,filtering.(par.varnames{i}).inner.bcio] = bcf(grids,filtering,rhs.(par.varnames{i}).inner,par,'inner');
-		filtering.(par.varnames{i}).inner.bciofull = logical(filtering.(par.varnames{i}).inner.filterMat'*(1*filtering.(par.varnames{i}).inner.bcio));
-		
-		[rhs.(par.varnames{i}).outer,filtering.(par.varnames{i}).outer.bcio] = bcf(grids,filtering,rhs.(par.varnames{i}).outer,par,'outer');
-		filtering.(par.varnames{i}).outer.bciofull = logical(filtering.(par.varnames{i}).outer.filterMat'*(1*filtering.(par.varnames{i}).outer.bcio));
-	
+function [rhs,filtering] = BCDrivCav(grids,filtering,rhs,par,spec)
+	if(~exist('spec','var'))
+		for i=1:numel(par.varnames)
+			
+			bcf = str2func(['bc' par.varnames{i}]);
+			
+			[rhs.(par.varnames{i}).inner,filtering] = bcf(grids,filtering,rhs.(par.varnames{i}).inner,par,'inner');
+			[rhs.(par.varnames{i}).outer,filtering] = bcf(grids,filtering,rhs.(par.varnames{i}).outer,par,'outer');
+			
+		end
+	else
+		bcf = str2func(['bc' spec.varname]);
+		[rhs.(spec.varname).(spec.side),filtering] = bcf(grids,filtering,rhs.(spec.varname).(spec.side),par,spec.side);
 	end
 	
 end
 
-function [rhs,bcio] = bcu(grids,filtering,rhs,par,side)
+function [rhs,filtering] = bcu(grids,filtering,rhs,par,side)
 	
 	flowrate = 1;
 	
@@ -29,22 +30,30 @@ function [rhs,bcio] = bcu(grids,filtering,rhs,par,side)
 	
 	rhs = rhs + in;
 	
-	bcio = on&~on;
+	filtering.u.(side).bcio = on&~on;
+	filtering = makebciofull(filtering,'u',side);
 	
 end
 
-function [rhs,bcio] = bcv(grids,filtering,rhs,par,side)
+function [rhs,filtering] = bcv(grids,filtering,rhs,par,side)
 	on = filtering.v.(side).on;
-	bcio = on&~on;
+	filtering.v.(side).bcio = on&~on;
+	filtering = makebciofull(filtering,'v',side);
 end
 
-function [rhs,bcio] = bcp(grids,filtering,rhs,par,side)
+function [rhs,filtering] = bcp(grids,filtering,rhs,par,side)
 	on = filtering.p.(side).on;
-	bcio = on&~on;
+	filtering.p.(side).bcio = on&~on;
+	filtering = makebciofull(filtering,'p',side);
 end
 
-function [rhs,bcio] = bcq(grids,filtering,rhs,par,side)
+function [rhs,filtering] = bcq(grids,filtering,rhs,par,side)
 	on = filtering.q.(side).on;
-	bcio = on&~on;
+	filtering.q.(side).bcio = on&~on;
+	filtering = makebciofull(filtering,'q',side);
+end
+
+function [filtering] = makebciofull(filtering,varname,side)
+	filtering.(varname).(side).bciofull = logical(filtering.(varname).(side).filterMat'*(1*filtering.(varname).(side).bcio));
 end
 

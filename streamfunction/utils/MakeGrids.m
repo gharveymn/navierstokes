@@ -52,7 +52,8 @@ function [grids,filtering,par] = MakeGrids(par)
 	decy = decy&(~ondecy|convex);
 	
 	grids.q.inner.sz = struct('x',nx-1,'y',ny-1);
-	grids.q.outer.sz = struct('x',nx+1,'y',ny+1);
+	grids.q.outer1.sz = struct('x',nx+1,'y',ny+1);
+	grids.q.outer2.sz = struct('x',nx+3,'y',ny+3);
 
 	filtering = struct;
 	
@@ -64,15 +65,18 @@ function [grids,filtering,par] = MakeGrids(par)
 	[grids,filtering] = CreateGrids(grids,filtering,par,'inner','q');
 
 	%outer
-	dx = -(1 + par.nx - grids.q.outer.sz.x)*hx/2;
-	dy = -(1 + par.ny - grids.q.outer.sz.y)*hy/2;
+	dx = -(1 + par.nx - grids.q.outer1.sz.x)*hx/2;
+	dy = -(1 + par.ny - grids.q.outer1.sz.y)*hy/2;
 
-	grids.q.outer.xlimcoords = xlimcoords + dx*(incx - decx);
-	grids.q.outer.ylimcoords = ylimcoords + dy*(incy - decy);
+	grids.q.outer1.xlimcoords = xlimcoords + dx*(incx - decx);
+	grids.q.outer1.ylimcoords = ylimcoords + dy*(incy - decy);
 	[grids,filtering] = CreateGrids(grids,filtering,par,'outer1','q');
 	
-	grids.q.outer.xlimcoords = xlimcoords + 2*dx*(incx - decx);
-	grids.q.outer.ylimcoords = ylimcoords + 2*dy*(incy - decy);
+	dx = -(1 + par.nx - grids.q.outer2.sz.x)*hx/2;
+	dy = -(1 + par.ny - grids.q.outer2.sz.y)*hy/2;
+	
+	grids.q.outer2.xlimcoords = xlimcoords + dx*(incx - decx);
+	grids.q.outer2.ylimcoords = ylimcoords + dy*(incy - decy);
 	[grids,filtering] = CreateGrids(grids,filtering,par,'outer2','q');
 	
 	

@@ -1,7 +1,7 @@
 function par = symchlong(par)
 	
 	par.mapfile = 'symchlong.txt';
-	par.bcfunc = @BCConIO;
+	par.bcfunc = @BCSymChNS;
 	par.hx = 0.25;
 	par.hy = 0.1;
 	par.Re = 45;

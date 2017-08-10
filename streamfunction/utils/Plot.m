@@ -1,19 +1,16 @@
-function figs = Plot(grids,filtering,res,par,figs)
+function Plot(grids,filtering,res,par)
 	set(gcf, 'renderer', 'zbuffer')
-	if(~exist('figs','var'))
-		figs = InitialPlot(grids,filtering,res,par);
-	else
-		%update if we already initialized the plots
-		figs = Update(grids,filtering,res,par,figs);
-	end
+	Update(grids,filtering,res,par);
 end
 
-function figs = InitialPlot(grids,filtering,res,par)
+function InitialPlot(grids,filtering,res,par)
+	
+	global figs
 	
 	U = res.U;
 	V = res.V;
 	Q = res.Q;
-	ax = MakeAxis(grids.inner.Xmesh,grids.inner.Ymesh);
+	ax = MakeAxis(grids.q.inner.Xmesh,grids.q.inner.Ymesh);
 
 	if(par.toPlot == 1)
 		
@@ -21,9 +18,9 @@ function figs = InitialPlot(grids,filtering,res,par)
 		clf
 		hold on
 		%surf
-		figs.f11 = surf(grids.outer.Xmesh,grids.outer.Ymesh,Q,'edgecolor','none','facecolor','interp');
+		figs.f11 = surf(grids.q.outer2.Xmesh,grids.q.outer2.Ymesh,Q,'edgecolor','none','facecolor','interp');
 		%quiver
-		figs.f12 = quiver3(grids.outer.Xmesh,grids.outer.Ymesh,max(max(Q))*ones(size(U)),U,V,zeros(size(U)),par.quivVectSca,'k-');
+		figs.f12 = quiver3(grids.q.outer2.Xmesh,grids.q.outer2.Ymesh,max(max(Q))*ones(size(U)),U,V,zeros(size(U)),par.quivVectSca,'k-');
 		axis(ax)
 		title('velocity vector field')
 		hold off
@@ -32,21 +29,21 @@ function figs = InitialPlot(grids,filtering,res,par)
 
 		figure(2)
 		clf
-		[C1,h1] = contour(grids.outer.Xmesh,grids.outer.Ymesh,U,par.conlines);
+		[C1,h1] = contour(grids.q.outer2.Xmesh,grids.q.outer2.Ymesh,U,par.conlines);
 		figs.f2 = {C1,h1};
 		axis(ax)
 		title('$u$','interpreter','latex','FontSize',20)
 
 		figure(3)
 		clf
-		[C2,h2] = contour(grids.outer.Xmesh,grids.outer.Ymesh,V,par.conlines);
+		[C2,h2] = contour(grids.q.outer2.Xmesh,grids.q.outer2.Ymesh,V,par.conlines);
 		figs.f3 = {C2,h2};
 		axis(ax)
 		title('$v$','interpreter','latex','FontSize',20)
 
 		figure(4)
 		clf
-		[C3,h3] = contour(grids.outer.Xmesh,grids.outer.Ymesh,Q,par.conlines);
+		[C3,h3] = contour(grids.q.outer2.Xmesh,grids.q.outer2.Ymesh,Q,par.conlines);
 		figs.f4 = {C3,h3};
 		axis(ax)
 		title('$\psi$','interpreter','latex','FontSize',20)
@@ -55,19 +52,19 @@ function figs = InitialPlot(grids,filtering,res,par)
 		
 		figure(1)
 		clf
-		figs.f1 = surf(grids.outer.Xmesh,grids.outer.Ymesh,U);
+		figs.f1 = surf(grids.q.outer2.Xmesh,grids.q.outer2.Ymesh,U);
 		axis(ax)
 		title('$U$','interpreter','latex','FontSize',20)
 		
 		figure(2)
 		clf
-		figs.f2 = surf(grids.outer.Xmesh,grids.outer.Ymesh,V);
+		figs.f2 = surf(grids.q.outer2.Xmesh,grids.q.outer2.Ymesh,V);
 		axis(ax)
 		title('$V$','interpreter','latex','FontSize',20)
 		
 		figure(3)
 		clf
-		figs.f3 = surf(grids.outer.Xmesh,grids.outer.Ymesh,Q);
+		figs.f3 = surf(grids.q.outer2.Xmesh,grids.q.outer2.Ymesh,Q);
 		axis(ax)
 		title('$Q$','interpreter','latex','FontSize',20)
 	
@@ -79,7 +76,9 @@ function figs = InitialPlot(grids,filtering,res,par)
 	
 end
 
-function figs = Update(grids,filtering,res,par,figs)
+function Update(grids,filtering,res,par)
+	
+	global figs
 	
 	lastwarn('')
 	
@@ -146,11 +145,11 @@ function figs = Update(grids,filtering,res,par,figs)
 	catch ME
 		%throw(ME)
 		disp('Couldn''t update one of the figures; we''ll try to make new ones')
-		figs = InitialPlot(grids,filtering,res,par);
+		InitialPlot(grids,filtering,res,par);
 	end
 	
 	if(~isempty(lastwarn))
-		figs = InitialPlot(grids,filtering,res,par);
+		InitialPlot(grids,filtering,res,par);
 	end
 	
 end
@@ -163,12 +162,15 @@ function ax = MakeAxis(x,y)
 	maxx = max(max(x));
 	miny = min(min(y));
 	maxy = max(max(y));
-	absmin = min(minx,miny);
-	absmax = max(maxx,maxy);
+	%absmin = min(minx,miny);
+	%absmax = max(maxx,maxy);
 	centerx = (maxx+minx)/2;
 	centery = (maxy+miny)/2;
-	difa = absmax-absmin;
-	ax = [centerx-difa/2, centerx+difa/2, centery-difa/2, centery+difa/2];
+	difxa = maxx-minx;
+	difya = maxy-miny;
+	sx = 1;
+	sy = 1;
+	ax = [centerx-sx*difxa/2, centerx+sx*difxa/2, centery-sy*difya/2, centery+sy*difya/2];
 end
 
 function clrs = MakeClrs(v)
