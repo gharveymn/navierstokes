@@ -1,4 +1,4 @@
-function [rhs,filtering] = BCSymChNS(grids,filtering,rhs,par)
+function [rhs,filtering] = BCConIO(grids,filtering,rhs,par)
 	
 	for i=1:numel(par.varnames)
 		

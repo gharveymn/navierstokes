@@ -1,17 +1,39 @@
 function [rhs,filtering] = BCSymChNS(grids,filtering,rhs,par)
 	
-	for i=1:numel(par.varnames)
+	if(par.stagger)
+		[rhs,filtering] = getBC(grids,filtering,rhs,par);
+	else
+		[rhs.q.inner,filtering.q.inner.bcio] = bcq(grids,filtering,rhs.q.inner,par,'inner','inner');
+		filtering.q.inner.bciofull = logical(filtering.q.inner.filterMat'*(1*filtering.q.inner.bcio));
 		
-		bcf = str2func(['bc' par.varnames{i}]);
+		[rhs.q.outer1,filtering.q.outer1.bcio] = bcq(grids,filtering,rhs.q.outer1,par,'outer1','inner');
+		filtering.q.outer1.bciofull = logical(filtering.q.outer1.filterMat'*(1*filtering.q.outer1.bcio));
 		
-		[rhs.(par.varnames{i}).inner,filtering.(par.varnames{i}).inner.bcio] = bcf(grids,filtering,rhs.(par.varnames{i}).inner,par,'inner');
-		filtering.(par.varnames{i}).inner.bciofull = logical(filtering.(par.varnames{i}).inner.filterMat'*(1*filtering.(par.varnames{i}).inner.bcio));
-		
-		[rhs.(par.varnames{i}).outer,filtering.(par.varnames{i}).outer.bcio] = bcf(grids,filtering,rhs.(par.varnames{i}).outer,par,'outer');
-		filtering.(par.varnames{i}).outer.bciofull = logical(filtering.(par.varnames{i}).outer.filterMat'*(1*filtering.(par.varnames{i}).outer.bcio));
-	
+		[rhs.q.outer2,filtering.q.outer2.bcio] = bcq(grids,filtering,rhs.q.outer2,par,'outer2','inner');
+		filtering.q.outer2.bciofull = logical(filtering.q.outer2.filterMat'*(1*filtering.q.outer2.bcio));
 	end
 	
+end
+
+function [rhs,filtering] = getBC(grids,filtering,rhs,par,spec)
+	if(~exist('spec','var'))
+		for i=1:numel(par.varnames)
+			
+			bcf = str2func(['bc' par.varnames{i}]);
+			
+			[rhs.(par.varnames{i}).inner,filtering.(par.varnames{i}).inner.bcio] = bcf(grids,filtering,rhs.(par.varnames{i}).inner,par,'inner');
+			filtering.(par.varnames{i}).inner.bciofull = logical(filtering.(par.varnames{i}).inner.filterMat'*(1*filtering.(par.varnames{i}).inner.bcio));
+			
+			[rhs.(par.varnames{i}).outer,filtering.(par.varnames{i}).outer.bcio] = bcf(grids,filtering,rhs.(par.varnames{i}).outer,par,'outer');
+			filtering.(par.varnames{i}).outer.bciofull = logical(filtering.(par.varnames{i}).outer.filterMat'*(1*filtering.(par.varnames{i}).outer.bcio));
+			
+		end
+	else
+		bcf = str2func(['bc' spec.varname]);
+		
+		[rhs.(spec.varname).(spec.side),filtering.(spec.varname).(spec.side).bcio] = bcf(grids,filtering,rhs.(spec.varname).(spec.side),par,spec.side);
+		filtering.(spec.varname).(spec.side).bciofull = logical(filtering.(spec.varname).(spec.side).filterMat'*(1*filtering.(spec.varname).(spec.side).bcio));
+	end
 end
 
 
@@ -97,7 +119,7 @@ function [rhs,bcio] = bcp(grids,filtering,rhs,par,side)
 	
 end
 
-function [rhs,bcio] = bcq(grids,filtering,rhs,par,side)
+function [rhs,bcio] = bcq(grids,filtering,rhs,par,side,sideinner)
 	
 	xmesh = grids.q.(side).xmesh;
 	ymesh = grids.q.(side).ymesh;
@@ -108,8 +130,16 @@ function [rhs,bcio] = bcq(grids,filtering,rhs,par,side)
 	xmin = min(xmesh(on));
 	
 	% inflow
-	inflowmax = max(ymesh(xmesh==xmin & on));
-	inflowmin = min(ymesh(xmesh==xmin & on));
+	if(exist('sideouter','var'))
+		ixmax = max(grids.q.(sideinner).xmesh(filtering.q.(sideinner).on));
+		ixmin = min(grids.q.(sideinner).xmesh(filtering.q.(sideinner).on));
+		
+		inflowmax = max(grids.q.(sideinner).ymesh(grids.q.(sideinner).xmesh==ixmin & filtering.q.(sideinner).on));
+		inflowmin = min(grids.q.(sideinner).ymesh(grids.q.(sideinner).xmesh==ixmin & filtering.q.(sideinner).on));
+	else
+		inflowmax = max(grids.q.(sideinner).ymesh(xmesh==xmin & on));
+		inflowmin = min(grids.q.(sideinner).ymesh(xmesh==xmin & on));
+	end
 	
 	d = (inflowmax-inflowmin)/2;
 	
@@ -125,8 +155,13 @@ function [rhs,bcio] = bcq(grids,filtering,rhs,par,side)
 	rhs = rhs + in;
 	
 	%outflow
-	outflowmax = max(ymesh(xmesh==xmax & on));
-	outflowmin = min(ymesh(xmesh==xmax & on));
+	if(exist('sideouter','var'))
+		outflowmax = max(grids.q.(sideinner).ymesh(grids.q.(sideinner).xmesh==ixmax & filtering.q.(sideinner).on));
+		outflowmin = min(grids.q.(sideinner).ymesh(grids.q.(sideinner).xmesh==ixmax & filtering.q.(sideinner).on));
+	else
+		outflowmax = max(ymesh(xmesh==xmax & on));
+		outflowmin = min(ymesh(xmesh==xmax & on));
+	end
 	
 	D = (outflowmax-outflowmin)/2;
 	
@@ -142,10 +177,10 @@ function [rhs,bcio] = bcq(grids,filtering,rhs,par,side)
 	rhs = rhs + out;
 	
 	% set top
-	rhs(ymesh > centerout & ~(effeq(xmesh,inflowx) | effeq(xmesh,outflowx)) & on) = max(rhs(xmesh==inflowx));
+	rhs(ymesh > centerout & (~(effeq(xmesh,inflowx) | effeq(xmesh,outflowx)) | ymesh > inflowmax) & on) = max(rhs(xmesh==inflowx));
 	
 	% set bottom
-	rhs(ymesh < centerout & ~(effeq(xmesh,inflowx) | effeq(xmesh,outflowx)) & on) = min(rhs(xmesh==inflowx));
+	rhs(ymesh < centerout & (~(effeq(xmesh,inflowx) | effeq(xmesh,outflowx)) | ymesh < inflowmin) & on) = min(rhs(xmesh==inflowx));
 	
 	bcio = ((xmesh==inflowx) & on) | ((xmesh==outflowx) & on);
 	

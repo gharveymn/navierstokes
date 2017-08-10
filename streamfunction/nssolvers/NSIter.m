@@ -1,18 +1,18 @@
-function [grids,filtering,res,par,figs] = NSIter(par,grids,filtering,rhs,figs)
+function [grids,filtering,res,par] = NSIter(par,grids,filtering,rhs)
 	
-	filterMat = filtering.outer.filterMat;
+	filterMat = filtering.q.outer.filterMat;
 	nx = par.nx;
 	ny = par.ny;
 	h = grids.h;
 	
-	qOnfullMat = reshape(filtering.inner.onfull,[nx-1,ny-1])';
+	qOnfullMat = reshape(filtering.q.inner.onfull,[nx-1,ny-1])';
 	qOnfullMatE = [zeros([ny-1,1]),qOnfullMat,zeros([ny-1,1])];
 	qOnfullMatE = logical([zeros([1,nx+1]);qOnfullMatE;zeros([1,nx+1])]);
 	qOnfullE = reshape(qOnfullMatE',[],1);
 	qOnE = logical(filterMat*(1*qOnfullE));
 	
 	%(nx,ny,h,a11x,a11y,a11io,order,bcwe,bcsn,bcio,posneg)
-	bih = biharmonic2(nx+1,ny+1,h,filtering.outer.dbcfull.w|filtering.outer.dbcfull.e,filtering.outer.dbcfull.s|filtering.outer.dbcfull.n,[],[],1);
+	bih = biharmonic2(nx+1,ny+1,h,filtering.q.outer.dbcfull.w|filtering.q.outer.dbcfull.e,filtering.q.outer.dbcfull.s|filtering.q.outer.dbcfull.n,[],[],1);
 	bih = filterMat*bih*filterMat';
 	
 	lap = laplacian2(nx+1,ny+1,h,1,1,1,1,[],[],[],-1);
@@ -26,23 +26,23 @@ function [grids,filtering,res,par,figs] = NSIter(par,grids,filtering,rhs,figs)
 	dy = kron(Dy,speye(nx+1));
 	dy = filterMat*dy*filterMat';
 	
-	qmesh = grids.outer.xmesh*0;
+	qmesh = grids.q.outer.xmesh*0;
 	
 	R = 1/par.Re;
 	
 	rhsbc = rhs.outer;
-	%rhsbc(qOnE) = rhs.inner(filtering.inner.on);
+	%rhsbc(qOnE) = rhs.inner(filtering.q.inner.on);
 
 	for k = 1:par.timesteps
-		Rnq = N(qmesh,R,filtering.outer.on,rhsbc);
+		Rnq = N(qmesh,R,filtering.q.outer.on,rhsbc,dx,dy,lap);
 		%add a little noise
 		%Rnq = Rnq + 0.1*~inout.*rand(numel(inout),1);
 		
 		qnew = qmesh*0;
-		ivec = grids.outer.yinit(randperm(numel(grids.outer.yinit)));
+		ivec = grids.q.outer.yinit(randperm(numel(grids.q.outer.yinit)));
 		for i = 1:ny+1
 			ycurr = ivec(i);
-			indices = (grids.outer.ymesh==ycurr);
+			indices = (grids.q.outer.ymesh==ycurr);
 			RnqSlice = Rnq(indices);
 			bihSlice = (bih(indices,:))';
 			bihSlice = (bihSlice(indices,:))';
@@ -62,7 +62,7 @@ function [grids,filtering,res,par,figs] = NSIter(par,grids,filtering,rhs,figs)
 	end
 	
 	
-	function nq = N(q,R,bc,rhs)
+	function nq = N(q,R,bc,rhs,dx,dy,lap)
 		nq = R*spdiag(dy*q)*dx*lap*q-spdiag(dx*q)*dy*lap*q;
 		nq(bc) = rhs(bc);
 	end
