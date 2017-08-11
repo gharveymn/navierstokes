@@ -26,12 +26,13 @@ function par = Parameters
 	par.streamfunction = true;
 	par.order = 2;
 	par.usestagger = true;
+	par.steps = 1000;
 	
 	%flow parameters
 	par.inflowAmp = 1;
 	par.nu = 1;							%kinematic viscosity
 	par.Re = 1e2;							%default value
-	par.omega = 0.5;
+	par.omega = 1.5;
 	
 	%plotting parameters
 	par.toPlot = 2;						%1==normal, 2==debug, 3==special
@@ -47,7 +48,7 @@ function par = Parameters
 	par.bcfunc = @BCSymChNS;
 	par.nssolver = @NSIter;
 	par.gridmaker = @MakeGrids;
-	par.model = @symchlong;
+	par.model = @drivcav;
 	
 
 	par = par.model(par);

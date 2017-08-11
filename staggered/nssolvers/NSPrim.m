@@ -114,7 +114,7 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	
 	ubcpar.we.inds = udbcfull.w|udbcfull.e;
 	ubcpar.sn.inds = udbcfull.s|udbcfull.n;
-	ubcpar.io.inds = filtering.u.inner.bciofull;
+	ubcpar.io.inds = filtering.u.inner.bciofull&~udbcfull.e;
 	
 	ubcpar.we.a11.x = dirichletmidbd;
 	ubcpar.we.a11.y = dirichletbd;
@@ -333,11 +333,11 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 		if((j==1 || mod(j,par.plotoniter)==0)&&~par.noplot)
 			
 			%stream function
-			rhsq = reshape((diff(U)/hy-diff(V')'/hx)',[],1);
-			%rhsq(filtering.q.inner.onfull) = rhs.q.inner(filtering.q.inner.on);
-			rhsq = rhsq(filtering.q.inner.valind);
-			q(perq,1) = Rq\(Rqt\rhsq(perq));
-			Q(:,:) = reshape(filtering.q.inner.filterMat'*q,nx-1,ny-1)';
+% 			rhsq = reshape((diff(U)/hy-diff(V')'/hx)',[],1);
+% 			%rhsq(filtering.q.inner.onfull) = rhs.q.inner(filtering.q.inner.on);
+% 			rhsq = rhsq(filtering.q.inner.valind);
+% 			q(perq,1) = Rq\(Rqt\rhsq(perq));
+% 			Q(:,:) = reshape(filtering.q.inner.filterMat'*q,nx-1,ny-1)';
 			
 			[res.Ue,res.Ve] = makeQuiverData(Ue,Ve,QdbcfullE,QUbcE,QVbcE,reshape(filtering.q.outer.valind,[nx+1,ny+1])');
 			
@@ -370,10 +370,10 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 				%a = res.Ue;
 				%b = res.U;
 				res.P = P;
-				%Qu = cumsum(res.U*hy);
-				%Qv = -cumsum(res.V'*hx)';
-				%res.Q = Qu;
-				res.Q = Q;
+				Qu = cumsum(res.U*hy);
+				Qv = -cumsum(res.V'*hx)';
+				res.Q = Qu;
+				%res.Q = Q;
 				
 				res.Qe = cumsum(res.Ue*hy);
 			end

@@ -1,12 +1,12 @@
 function par = symchlong(par)
 	
 	par.mapfile = 'symchlong.txt';
-	par.bcfunc = @BCSymChNS;
+	par.bcfunc = @BCConIO;
 	par.hx = 0.25;
 	par.hy = 0.1;
-	par.Re = 45;
+	par.Re = 20;
 	par.plotoniter = 100;
-	par.conlines = 10;
+	par.conlines = 40;
 	par.quivVectSca = .1*(sqrt(par.hx^2 + par.hy^2)/0.05);
 	par.dt = 0.1;
 	par.tf = 1000;

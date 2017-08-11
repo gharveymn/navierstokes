@@ -8,6 +8,7 @@ function par = drivcav(par)
 	par.tf = 20;
 	par.plotoniter = 1;
 	par.quivVectSca = 1;
+	par.steps = 1000;
 	
 end
 

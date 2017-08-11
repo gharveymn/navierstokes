@@ -25,10 +25,12 @@ function [grids,filtering,res,par] = NSIter(par,grids,filtering,rhs)
 	for i = 1:numel(fi)
 		[~,qdbcfullEinE2.(fi{i})] = placeInE(qdbcfullE.(fi{i}),filtering.q.outer2.valind,nx+1,ny+1);
 	end
-	
+	[~,qbciofullEinE2] = placeInE(filtering.q.outer1.bciofull,filtering.q.outer2.valind,nx+1,ny+1);
 	
 	%(nx,ny,h,a11x,a11y,a11io,order,bcwe,bcsn,bcio,posneg)
-	bih = biharmonic2(nx+3,ny+3,hx,hy,qdbcfullE2.w|qdbcfullE2.e|qdbcfullEinE2.w|qdbcfullE2.e,qdbcfullE2.s|qdbcfullE2.n|qdbcfullEinE2.s|qdbcfullE2.n,[],[],1);
+	bih = biharmonic2(nx+3,ny+3,hx,hy,[],[],qdbcfullE2.w|qdbcfullE2.e|qdbcfullEinE2.w|qdbcfullEinE2.e&~filtering.q.outer2.bciofull&~qbciofullEinE2,...
+					qdbcfullE2.s|qdbcfullEinE2.s,1);
+	%bih = biharmonic2(nx+3,ny+3,hx,hy,qdbcfullE2.w|qdbcfullE2.e,qdbcfullE2.s|qdbcfullE2.n,[],[],1);
 	bih = filterMat*bih*filterMat';
 	
 	%stencil boundary conds
@@ -89,7 +91,7 @@ function [grids,filtering,res,par] = NSIter(par,grids,filtering,rhs)
 % 			
 % 		end
 
-		qnew = bih\Rnq;
+ 		qnew = bih\Rnq;
 		
 		qmesh = (1-par.omega)*qmesh + par.omega*qnew;
 		

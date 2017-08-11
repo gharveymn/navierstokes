@@ -30,7 +30,7 @@ function par = Parameters
 	par.omega = 0.5;
 	
 	%plotting parameters
-	par.toPlot = 2;						%1==normal, 2==debug, 3==special
+	par.toPlot = 1;						%1==normal, 2==debug, 3==special
 	par.conlines = 40;
 	par.quivVectSca = .1*(par.h/0.05);
 	par.plotoniter = 100;
