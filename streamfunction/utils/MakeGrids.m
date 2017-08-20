@@ -26,14 +26,23 @@ function [grids,filtering,par] = MakeGrids(par)
 	end
 	
 	h = par.h;
-	hx = par.hx;
-	hy = par.hy;
-
 	limits = [min(xlimcoords),max(xlimcoords),min(ylimcoords),max(ylimcoords)];
-	nx = (limits(2)-limits(1))/hx;
-	ny = (limits(4)-limits(3))/hy;
-	par.nx = nx;
-	par.ny = ny;
+	
+	if(strcmp(par.griduse,'h'))
+		hx = par.hx;
+		hy = par.hy;
+		nx = (limits(2)-limits(1))/hx;
+		ny = (limits(4)-limits(3))/hy;
+		par.nx = nx;
+		par.ny = ny;
+	else
+		nx = par.nx;
+		ny = par.ny;
+		hx = (limits(2)-limits(1))/nx;
+		hy = (limits(4)-limits(3))/ny;
+		par.hx = hx;
+		par.hy = hy;
+	end
 	
 	c = convhull(xlimcoords,ylimcoords);
 	convex = zeros(numel(xlimcoords),1);

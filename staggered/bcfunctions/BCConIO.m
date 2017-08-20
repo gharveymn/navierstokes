@@ -115,6 +115,8 @@ function [rhs,filtering] = bcq(grids,filtering,rhs,par,side)
 end
 
 function [filtering] = makebciofull(filtering,varname,side)
+	filtering.(varname).(side).dbc.io = filtering.(varname).(side).bcio;
 	filtering.(varname).(side).bciofull = logical(filtering.(varname).(side).filterMat'*(1*filtering.(varname).(side).bcio));
+	filtering.(varname).(side).dbcfull.io = filtering.(varname).(side).bciofull;
 end
 

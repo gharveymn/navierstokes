@@ -140,7 +140,7 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	vbcpar.sn.a11.x = dirichletbd;
 	vbcpar.sn.a11.y = dirichletmidbd;
 	
-	vbcpar.io.a11.x = dirichletbd;
+	vbcpar.io.a11.x = neumannbd;
 	vbcpar.io.a11.y = dirichletbd;	
 	
 	Lv = laplacian2(nx,ny-1,hx,hy,1,-1,vbcpar);
@@ -182,24 +182,17 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 		res.Vgpu = res.Ugpu;
 	end
 	
-	
-	uValMat = reshape(filtering.u.inner.valind,[nx-1,ny])';
-	uValMatE = reshape(filtering.u.outer.valind,[nx+1,ny+2])';
-	uValMatInE = [zeros([ny,1]),uValMat,zeros([ny,1])];
+	uValMatInE = [zeros([ny,1]),filtering.u.inner.valmat,zeros([ny,1])];
 	uValMatInE = logical([zeros([1,nx+1]);uValMatInE;zeros([1,nx+1])]);
-	uvalindE = reshape(uValMatInE',[],1);
 	
-	vValMat = reshape(filtering.v.inner.valind,[nx,ny-1])';
-	vValMatE = reshape(filtering.v.outer.valind,[nx+2,ny+1])';
-	vValMatInE = [zeros([ny-1,1]),vValMat,zeros([ny-1,1])];
+	vValMatInE = [zeros([ny-1,1]),filtering.v.inner.valmat,zeros([ny-1,1])];
 	vValMatInE = logical([zeros([1,nx+2]);vValMatInE;zeros([1,nx+2])]);
-	vvalindE = reshape(vValMatInE',[],1);
 	
-	pValMat = reshape(filtering.p.inner.valind,[nx,ny])';
-	pValMatE = reshape(filtering.p.outer.valind,[nx+2,ny+2])';
-	pValMatInE = [zeros([ny,1]),pValMat,zeros([ny,1])];
+	pValMatInE = [zeros([ny,1]),filtering.p.inner.valmat,zeros([ny,1])];
 	pValMatInE = logical([zeros([1,nx+2]);pValMatInE;zeros([1,nx+2])]);
-	pvalindE = reshape(pValMatInE',[],1);
+	
+	qValMatInE = [zeros([ny-1,1]),filtering.q.inner.valmat,zeros([ny-1,1])];
+	qValMatInE = logical([zeros([1,nx+1]);qValMatInE;zeros([1,nx+1])]);
 	
 % 	pOnMat = reshape(filtering.p.inner.onfull,[nx,ny])';
 % 	Pselin.W = circshift(Pdbcfull.c,1,2)&pOnMat&~(grids.p.inner.Xmesh == min(grids.p.inner.xinit));
@@ -219,13 +212,6 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 % 	Pselin.SE.S = Pselin.S&circshift(Pselin.SE.c,1);
 % 	Pselin.SE.E = Pselin.E&circshift(Pselin.SE.c,-1,2);
 	
-	
-	qValMat = reshape(filtering.q.inner.valind,[nx-1,ny-1])';
-	qValMatE = reshape(filtering.q.outer.valind,[nx+1,ny+1])';
-	qValMatInE = [zeros([ny-1,1]),qValMat,zeros([ny-1,1])];
-	qValMatInE = logical([zeros([1,nx+1]);qValMatInE;zeros([1,nx+1])]);
-	qvalindE = reshape(qValMatInE',[],1);
-	
 	Pxsel = circshift(Pdbcfull.w,-1,2)&~circshift(reshape(filtering.p.inner.bciofull,[nx,ny])',-1,2);
 	Pxsel = Pxsel(:,1:end-1);
 	Pysel = Pdbcfull.n|circshift(Pdbcfull.s,-1,1);
@@ -239,6 +225,20 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 	uvxsel = reshape(filtering.u.outer.valind,[nx+1,ny+2])';
 	uvysel = reshape(filtering.v.outer.valind,[nx+2,ny+1])';
 	
+	u = zeros(size(Lu,1),1);
+	v = zeros(size(Lv,1),1);
+	p = zeros(size(Lp,1),1);
+	q = zeros(size(Lq,1),1);
+	
+	numfps = par.numfps;
+	pfps = zeros(numfps,1);
+	cfps = zeros(numfps,1);
+	cfpsi = 1;
+	pfpsi = 1;
+	
+	pt = tic;
+	ct = tic;
+	
 	fprintf('\n')
 	lents = 0;
 	for j=1:par.timesteps
@@ -246,11 +246,11 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 		% nonlinear terms/explicit convection
 		gamma = min(1.2*par.dt*max(max(max(abs(U)))/hx,max(max(abs(V)))/hy),1);
 		
-		Ue(uValMatInE) = U(uValMat);
+		Ue(uValMatInE) = U(filtering.u.inner.valmat);
 		Ue(uselEw|uselEe) = UbcE(uselEw|uselEe);
 		Ue(UdbcfullE.n|UdbcfullE.s) = 2*UbcE(UdbcfullE.n|UdbcfullE.s)-Ue(Uselin.N|Uselin.S);
 		
-		Ve(vValMatInE) = V(vValMat);
+		Ve(vValMatInE) = V(filtering.v.inner.valmat);
 		Ve(vselEs|vselEn) = VbcE(vselEs|vselEn);
 		Ve(VdbcfullE.w|VdbcfullE.e) = 2*VbcE(VdbcfullE.w|VdbcfullE.e)-Ve(Vselin.W|Vselin.E);
 		
@@ -280,34 +280,37 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 		U = U-par.dt*(UVy(:,2:end-1)+U2x);
 		V = V-par.dt*(UVx(2:end-1,:)+V2y);
 		
+		%U(Udbcfull.io) = Ubc(Udbcfull.io);
+		%V(Vdbcfull.io) = Vbc(Vdbcfull.io);
+		
 		% implicit diffusion
 		rhsu = reshape((U+Ubc)',[],1);
 		rhsu = rhsu(filtering.u.inner.valind);
-		u(peru,1) = (Ru\(Rut\rhsu(peru)));
-		U(:,:) = reshape(filtering.u.inner.filterMat'*u,nx-1,ny)';
+		u(peru) = (Ru\(Rut\rhsu(peru)));
+		U = reshape(filtering.u.inner.filterMat'*u,nx-1,ny)';
 		
 		rhsv = reshape((V+Vbc)',[],1);
 		rhsv = rhsv(filtering.v.inner.valind);
-		v(perv,1) = (Rv\(Rvt\rhsv(perv)));
-		V(:,:) = reshape(filtering.v.inner.filterMat'*v,nx,ny-1)';
+		v(perv) = (Rv\(Rvt\rhsv(perv)));
+		V = reshape(filtering.v.inner.filterMat'*v,nx,ny-1)';
 		
 		% pressure correction
 		Uep = Ue;
-		Uep(uValMatInE) = U(uValMat);
+		Uep(uValMatInE) = U(filtering.u.inner.valmat);
 		Ue(uselEw|uselEe) = UbcE(uselEw|uselEe);
 		Uep(UdbcfullE.s|UdbcfullE.n) = 0;
 		Uep = Uep(2:end-1,:);
 		
 		Vep = Ve;
-		Vep(vValMatInE) = V(vValMat);
+		Vep(vValMatInE) = V(filtering.v.inner.valmat);
 		Vep(vselEs|vselEn) = VbcE(vselEs|vselEn);
 		Vep(VdbcfullE.w|VdbcfullE.e) = 0;
 		Vep = Vep(:,2:end-1);
 		
 		rhsp = reshape((diff(Uep')'/hx+diff(Vep)/hy)',[],1);
 		rhsp = 1/par.dt*rhsp(filtering.p.inner.valind);
-		p(perp,1) = -(Rp\(Rpt\rhsp(perp)));
-		P(:,:) = reshape(filtering.p.inner.filterMat'*p,nx,ny)';
+		p(perp) = -(Rp\(Rpt\rhsp(perp)));
+		P = reshape(filtering.p.inner.filterMat'*p,nx,ny)';
 % 		P(Pselin.NW.c) = (P(Pselin.NW.N)+P(Pselin.NW.W))/2;
 % 		P(Pselin.NE.c) = (P(Pselin.NE.N)+P(Pselin.NE.E))/2;
 % 		P(Pselin.SW.c) = (P(Pselin.SW.S)+P(Pselin.SW.W))/2;
@@ -322,8 +325,8 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 		U = U-par.dt*Px;
 		V = V-par.dt*Py;
 		
-		Ue(uValMatInE) = U(uValMat);
-		Ve(vValMatInE) = V(vValMat);
+		Ue(uValMatInE) = U(filtering.u.inner.valmat);
+		Ve(vValMatInE) = V(filtering.v.inner.valmat);
 		
 		for i=1:numel(par.wesn)
 			Ue(UdbcfullE.(par.wesn{i})) = UbcE(UdbcfullE.(par.wesn{i}));
@@ -336,14 +339,14 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 % 			rhsq = reshape((diff(U)/hy-diff(V')'/hx)',[],1);
 % 			%rhsq(filtering.q.inner.onfull) = rhs.q.inner(filtering.q.inner.on);
 % 			rhsq = rhsq(filtering.q.inner.valind);
-% 			q(perq,1) = Rq\(Rqt\rhsq(perq));
-% 			Q(:,:) = reshape(filtering.q.inner.filterMat'*q,nx-1,ny-1)';
+% 			q(perq) = Rq\(Rqt\rhsq(perq));
+% 			Q = reshape(filtering.q.inner.filterMat'*q,nx-1,ny-1)';
 			
 			[res.Ue,res.Ve] = makeQuiverData(Ue,Ve,QdbcfullE,QUbcE,QVbcE,reshape(filtering.q.outer.valind,[nx+1,ny+1])');
 			
 			if(par.useGPU)
-				res.Ugpu(qValMat) = res.Ue(qValMatInE);
-				res.Vgpu(qValMat) = res.Ve(qValMatInE);
+				res.Ugpu(filtering.q.inner.valmat) = res.Ue(qValMatInE);
+				res.Vgpu(filtering.q.inner.valmat) = res.Ve(qValMatInE);
 				
 				%a = res.Ue;
 				%b = res.U;
@@ -362,10 +365,11 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 				res.Ve = gather(res.Ve);
 				res.Qe = gather(res.Qe);
 			else
+				
 				res.U = zeros(ny-1,nx-1);
 				res.V = res.U;
-				res.U(qValMat) = res.Ue(qValMatInE);
-				res.V(qValMat) = res.Ve(qValMatInE);
+				res.U(filtering.q.inner.valmat) = res.Ue(qValMatInE);
+				res.V(filtering.q.inner.valmat) = res.Ve(qValMatInE);
 				
 				%a = res.Ue;
 				%b = res.U;
@@ -378,11 +382,43 @@ function [grids,filtering,res,par] = NSPrim(par,grids,filtering,rhs)
 				res.Qe = cumsum(res.Ue*hy);
 			end
 			
-			PlotNS(grids,filtering,res,par);
+			if(par.useinterp)
+
+				res.U  = interp2(grids.q.inner.X,grids.q.inner.Y,res.U ,grids.plot.q.inner.X,grids.plot.q.inner.Y);
+				res.V  = interp2(grids.q.inner.X,grids.q.inner.Y,res.V ,grids.plot.q.inner.X,grids.plot.q.inner.Y);
+				res.P  = interp2(grids.p.inner.X,grids.p.inner.Y,res.P ,grids.plot.p.inner.X,grids.plot.p.inner.Y);
+				res.Q  = interp2(grids.q.inner.X,grids.q.inner.Y,res.Q ,grids.plot.q.inner.X,grids.plot.q.inner.Y);
+				res.Ue = interp2(grids.q.outer.X,grids.q.outer.Y,res.Ue,grids.plot.q.outer.X,grids.plot.q.outer.Y);
+				res.Ve = interp2(grids.q.outer.X,grids.q.outer.Y,res.Ve,grids.plot.q.outer.X,grids.plot.q.outer.Y);
+				res.Qe = interp2(grids.q.outer.X,grids.q.outer.Y,res.Qe,grids.plot.q.outer.X,grids.plot.q.outer.Y);
+
+				PlotNS(grids.plot,filtering.plot,res,par)
+
+			else
+
+				PlotNS(grids,filtering,res,par);
+
+			end
+			
+			pfps(pfpsi) = 1/toc(pt);
+			pt = tic;
+			if(pfpsi == numfps)
+				pfpsi = 1;
+			else
+				pfpsi = pfpsi+1;
+			end
 			
 		end
 		
-		timestr = sprintf('Time step: %5.2f/%5.2fs',j*par.dt,par.tf);
+		cfps(cfpsi) = 1/toc(ct);
+		ct = tic;
+		if(cfpsi == numfps)
+			cfpsi = 1;
+		else
+			cfpsi = cfpsi+1;
+		end	
+		
+		timestr = sprintf('Time step: %5.2f/%5.2fs | Plotted FPS: %d fps | Computed FPS: %d fps',j*par.dt,par.tf,round(sum(pfps)/(numfps+min(j-numfps,0))),round(sum(cfps)/(numfps+min(j-numfps,0))));
 		fprintf([repmat('\b',1,lents) timestr]);
 		lents = numel(timestr);
 		
@@ -398,13 +434,13 @@ function v = vectify(M)
 	v = reshape(M',[],1);
 end
 
-function [Unew,Vnew] = makeQuiverData(U,V,QdbcfullE,QUbcE,QVbcE,qValMat)
+function [Unew,Vnew] = makeQuiverData(U,V,QdbcfullE,QUbcE,QVbcE,qvalmat)
 	Unew = mvgavg(U);
 	Vnew = mvgavg(V,2);
 	Unew(QdbcfullE.s|QdbcfullE.n|QdbcfullE.c) = QUbcE(QdbcfullE.s|QdbcfullE.n|QdbcfullE.c);
 	Vnew(QdbcfullE.w|QdbcfullE.e|QdbcfullE.c) = QVbcE(QdbcfullE.w|QdbcfullE.e|QdbcfullE.c);
-	Unew(~(qValMat)) = 0;
-	Vnew(~(qValMat)) = 0;
+	Unew(~(qvalmat)) = 0;
+	Vnew(~(qvalmat)) = 0;
 	%Len = sqrt(Unew.^2+Vnew.^2+eps);
 	%Unew = Unew./Len;
 	%Vnew = Vnew./Len;

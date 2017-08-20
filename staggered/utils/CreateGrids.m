@@ -21,10 +21,15 @@ function [grids,filtering] = CreateGrids(grids,filtering,par,side,vn)
 	filterMat = spdiag(valind);
 	filterMat = filterMat(valind,:);
 	
+	valmat = reshape(valind,[szx,szy])';
+	
 	on = onfull(valind);
 	
-	Xmesh = reshape(xmeshfull./valind,[szx,szy])';
-	Ymesh = reshape(ymeshfull./valind,[szx,szy])';
+	X = reshape(xmeshfull,[szx,szy])';
+	Y = reshape(ymeshfull,[szx,szy])';
+	
+	Xmesh = X./valmat;
+	Ymesh = Y./valmat;
 	
 	xmesh = filterMat*xmeshfull;
 	ymesh = filterMat*ymeshfull;
@@ -33,6 +38,8 @@ function [grids,filtering] = CreateGrids(grids,filtering,par,side,vn)
 	grids.(vn).(side).yinit = yinit;
 	grids.(vn).(side).xmesh = xmesh;
 	grids.(vn).(side).ymesh = ymesh;
+	grids.(vn).(side).X = X;
+	grids.(vn).(side).Y = Y;
 	grids.(vn).(side).Xmesh = Xmesh;
 	grids.(vn).(side).Ymesh = Ymesh;
 	grids.(vn).(side).xmeshfull = xmeshfull;
@@ -40,10 +47,14 @@ function [grids,filtering] = CreateGrids(grids,filtering,par,side,vn)
 	
 	filtering.(vn).(side).filterMat = filterMat;
 	filtering.(vn).(side).valind = valind;
+	filtering.(vn).(side).valmat = valmat;
 	filtering.(vn).(side).on = on;
 	filtering.(vn).(side).onfull = onfull;
 	
 	[dbc,dbcfull] = boundarysides(grids.(vn),filtering.(vn),par,side,szx);
+	
+	dbc.on = on;
+	dbcfull.on = onfull;
 	
 	filtering.(vn).(side).dbc = dbc;
 	filtering.(vn).(side).dbcfull = dbcfull;

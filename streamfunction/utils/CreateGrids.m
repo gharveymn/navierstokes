@@ -1,7 +1,7 @@
 function [grids,filtering] = CreateGrids(grids,filtering,par,side,vn)
 	
-	hx = par.hx;
-	hy = par.hy;
+	hx = grids.(vn).hx;
+	hy = grids.(vn).hy;
 	
 	szx = grids.(vn).(side).sz.x;
 	szy = grids.(vn).(side).sz.y;
@@ -9,7 +9,6 @@ function [grids,filtering] = CreateGrids(grids,filtering,par,side,vn)
 	xlimcoords = grids.(vn).(side).xlimcoords;
 	ylimcoords = grids.(vn).(side).ylimcoords;
 
-	
 	xinit = linspace(min(grids.(vn).(side).xlimcoords),max(grids.(vn).(side).xlimcoords),szx)';
 	yinit = linspace(min(grids.(vn).(side).ylimcoords),max(grids.(vn).(side).ylimcoords),szy)';
 	
@@ -21,6 +20,8 @@ function [grids,filtering] = CreateGrids(grids,filtering,par,side,vn)
 	filterMat = spdiag(valind);
 	filterMat = filterMat(valind,:);
 	
+	valmat = reshape(filtering.u.inner.valind,[szx,szy])';
+	
 	on = onfull(valind);
 	
 	Xmesh = reshape(xmeshfull./valind,[szx,szy])';
@@ -28,6 +29,10 @@ function [grids,filtering] = CreateGrids(grids,filtering,par,side,vn)
 	
 	xmesh = filterMat*xmeshfull;
 	ymesh = filterMat*ymeshfull;
+	
+	if(par.useinterp)
+		
+	end
 	
 	grids.(vn).(side).xinit = xinit;
 	grids.(vn).(side).yinit = yinit;
@@ -40,6 +45,7 @@ function [grids,filtering] = CreateGrids(grids,filtering,par,side,vn)
 	
 	filtering.(vn).(side).filterMat = filterMat;
 	filtering.(vn).(side).valind = valind;
+	filtering.(vn).(side).valmat = valmat;
 	filtering.(vn).(side).on = on;
 	filtering.(vn).(side).onfull = onfull;
 	

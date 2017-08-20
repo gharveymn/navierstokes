@@ -20,8 +20,12 @@ function par = Parameters
 	par.h = 0.05;
 	par.hx = 0.05;
 	par.hy = 0.05;
+	par.nx = 100;
+	par.ny = 30;
+	par.griduse = 'h';
 	par.dt = 0.1;
 	par.tf = 200;
+	
 	
 	%flow parameters
 	par.inflowAmp = 1;
@@ -30,11 +34,15 @@ function par = Parameters
 	par.omega = 0.5;
 	
 	%plotting parameters
-	par.toPlot = 1;						%1==normal, 2==debug, 3==special
+	par.toplot = 1;						%1==normal, 2==debug, 3==special, %4==simple
 	par.conlines = 40;
 	par.quivVectSca = .1*(par.h/0.05);
 	par.plotoniter = 100;
 	par.noplot = false;
+	par.pnx = 60;
+	par.pny = 30;
+	par.useinterp = true;
+	par.numfps = 15;
 	
 	par.rhfunc = @RHZero;
 	par.bcfunc = @BCSymChNS;
