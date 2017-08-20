@@ -34,8 +34,8 @@ y = linspace(0,ly,ny+1); hy = ly/ny;
 % initial conditions
 U = zeros(nx-1,ny); V = zeros(nx,ny-1);
 % boundary conditions
-uN = x*0;    vN = avg(x)*0+1;
-uS = x*0;      vS = avg(x)*0+1;
+uN = x*0+1;    vN = avg(x)*0;
+uS = x*0;      vS = avg(x)*0;
 uW = avg(y)*0; vW = y*0;
 uE = avg(y)*0; vE = y*0;
 %-----------------------------------------------------------------------
@@ -74,6 +74,7 @@ for k = 1:nt
    U = U-dt*(UVy(2:end-1,:)+U2x);
    V = V-dt*(UVx(:,2:end-1)+V2y);
    
+   a = U+Ubc;
    % implicit viscosity
    rhs = reshape(U+Ubc,[],1);
    u(peru) = Ru\(Rut\rhs(peru));

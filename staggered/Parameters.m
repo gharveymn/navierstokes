@@ -1,5 +1,5 @@
 function par = Parameters
-	% Parameters
+	% PARAMETERS
 	%
 	% Definite parameters go here
 	
@@ -47,10 +47,9 @@ function par = Parameters
 	par.rhfunc = @RHZero;
 	par.bcfunc = @BCSymChNS;
 	par.nssolver = @NSPrim;
-	par.gridmaker = @MakeStaggeredGrids;
 	par.model = @symchlong;
 
-	%applies a specific model
+	%applies a specific model (to more easily switch between different parameter sets)
 	par = par.model(par);
 	
 	par.timesteps = round(par.tf/par.dt);

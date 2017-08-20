@@ -2,7 +2,7 @@ if(~exist('testrun','var') || ~testrun)
 	par = Parameters;
 end
 
-[grids,filtering,par] = par.gridmaker(par);
+[grids,filtering,par] = MakeStaggeredGrids(par);
 [rhs] = par.rhfunc(grids,par);
 [rhs,filtering] = par.bcfunc(grids,filtering,rhs,par);
 
