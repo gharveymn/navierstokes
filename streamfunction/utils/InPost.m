@@ -32,8 +32,8 @@ function res = InPost(qmesh,grids,filtering,par)
 	dy = spdiag(~bcs)*dy + 1/hy*(-spdiag(bcs) + spdiag(bcs(1:end-nx-4),nx+4));
 	dy = spdiag(~bcn)*dy + 1/hy*(-spdiag(bcn(nx+4:end),-nx-3) + spdiag(bcn));
 	
-	umesh = dy*qmesh;
-	vmesh = -dx*qmesh;
+	umesh = -dy*qmesh;
+	vmesh = dx*qmesh;
 	
 	umeshfull = filterMat'*umesh;
 	res.U = reshape(umeshfull,[nx+3,ny+3])';

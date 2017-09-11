@@ -34,7 +34,8 @@ function par = Parameters
 	par.omega = 0.5;
 	
 	%plotting parameters
-	par.toplot = 1;						%1==normal, 2==debug, 3==special, %4==simple
+	par.toplot = 2;						%1==normal, 2==surf, 3==contour, %4==simple normal, %5==quiver/contour
+	par.plotbc = false;
 	par.conlines = 40;
 	par.quivVectSca = .1*(par.h/0.05);
 	par.plotoniter = 100;

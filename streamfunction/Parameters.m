@@ -35,7 +35,7 @@ function par = Parameters
 	par.inflowAmp = 1;
 	par.nu = 1;							%kinematic viscosity
 	par.Re = 1e2;							%default value
-	par.omega = 1.5;
+	par.omega = 0.1;
 	
 	%plotting parameters
 	par.toPlot = 2;						%1==normal, 2==debug, 3==special

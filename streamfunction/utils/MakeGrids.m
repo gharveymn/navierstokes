@@ -27,19 +27,21 @@ function [grids,filtering,par] = MakeGrids(par)
 	
 	h = par.h;
 	limits = [min(xlimcoords),max(xlimcoords),min(ylimcoords),max(ylimcoords)];
+	delx = limits(2)-limits(1);
+	dely = limits(4)-limits(3);
 	
 	if(strcmp(par.griduse,'h'))
 		hx = par.hx;
 		hy = par.hy;
-		nx = (limits(2)-limits(1))/hx;
-		ny = (limits(4)-limits(3))/hy;
+		nx = (delx)/hx;
+		ny = (dely)/hy;
 		par.nx = nx;
 		par.ny = ny;
 	else
 		nx = par.nx;
 		ny = par.ny;
-		hx = (limits(2)-limits(1))/nx;
-		hy = (limits(4)-limits(3))/ny;
+		hx = (delx)/nx;
+		hy = (dely)/ny;
 		par.hx = hx;
 		par.hy = hy;
 	end
@@ -63,6 +65,9 @@ function [grids,filtering,par] = MakeGrids(par)
 	grids.q.inner.sz = struct('x',nx-1,'y',ny-1);
 	grids.q.outer1.sz = struct('x',nx+1,'y',ny+1);
 	grids.q.outer2.sz = struct('x',nx+3,'y',ny+3);
+	
+	grids.q.hx = hx;
+	grids.q.hy = hy;
 
 	filtering = struct;
 	

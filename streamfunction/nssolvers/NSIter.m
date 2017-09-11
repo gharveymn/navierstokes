@@ -21,15 +21,23 @@ function [grids,filtering,res,par] = NSIter(par,grids,filtering,rhs)
 	
 	qdbcfullE = filtering.q.outer1.dbcfull;
 	qdbcfullE2 = filtering.q.outer2.dbcfull;
+	qdbcE2 = filtering.q.outer2.dbc;
 	fi = fields(qdbcfullE);
 	for i = 1:numel(fi)
-		[~,qdbcfullEinE2.(fi{i})] = placeInE(qdbcfullE.(fi{i}),filtering.q.outer2.valind,nx+1,ny+1);
+		[qdbcEinE2.(fi{i}),qdbcfullEinE2.(fi{i})] = placeInE(qdbcfullE.(fi{i}),filtering.q.outer2.valind,nx+1,ny+1);
 	end
 	[~,qbciofullEinE2] = placeInE(filtering.q.outer1.bciofull,filtering.q.outer2.valind,nx+1,ny+1);
 	
-	%(nx,ny,h,a11x,a11y,a11io,order,bcwe,bcsn,bcio,posneg)
-	bih = biharmonic2(nx+3,ny+3,hx,hy,[],[],qdbcfullE2.w|qdbcfullE2.e|qdbcfullEinE2.w|qdbcfullEinE2.e&~filtering.q.outer2.bciofull&~qbciofullEinE2,...
-					qdbcfullE2.s|qdbcfullEinE2.s,1);
+	%biharmonic2(nx,ny,hx,hy,bcxd,bcyd,bcxn,bcyn,posneg)
+	%bih = biharmonic2(nx+3,ny+3,hx,hy,qdbcfullE2.w|qdbcfullE2.e,qdbcfullE2.n|qdbcfullE2.s|qdbcfullEinE2.n,(qdbcfullEinE2.w|qdbcfullEinE2.e)&~qdbcfullEinE2.n,qdbcfullEinE2.s,1);
+	bih = biharmonic2(nx+3,ny+3,hx,hy,...
+		qdbcfullE2.w|qdbcfullE2.e,...
+		qdbcfullE2.n|qdbcfullE2.s|(qdbcfullEinE2.n),...
+		qdbcfullEinE2.s&~(qdbcfullEinE2.w|qdbcfullEinE2.e),...
+		(qdbcfullEinE2.w|qdbcfullEinE2.e)&~qdbcfullEinE2.n,...
+		-1);
+	%bih = biharmonic2(nx+3,ny+3,hx,hy,[],[],qdbcfullE2.w|qdbcfullE2.e|qdbcfullEinE2.w|qdbcfullEinE2.e&~filtering.q.outer2.bciofull&~qbciofullEinE2,...
+	%				qdbcfullE2.s|qdbcfullEinE2.s,1);
 	%bih = biharmonic2(nx+3,ny+3,hx,hy,qdbcfullE2.w|qdbcfullE2.e,qdbcfullE2.s|qdbcfullE2.n,[],[],1);
 	bih = filterMat*bih*filterMat';
 	
@@ -53,7 +61,7 @@ function [grids,filtering,res,par] = NSIter(par,grids,filtering,rhs)
 	qbcpar.io.a11.y = dirichletbd;
 	Lq = laplacian2(nx+3,ny+3,hx,hy,1,-1,qbcpar);
 	Lq = filtering.q.outer2.filterMat*Lq*filtering.q.outer2.filterMat';
-	perq = symamd(Lq); Rq = chol(Lq(perq,perq)); Rqt = Rq';
+	%perq = symamd(Lq); Rq = chol(Lq(perq,perq)); Rqt = Rq';
 	
 	Dx = sptoeplitz([0 -1],[0 1],nx+3)./(2*hx);
 	dx = kron(speye(ny+3),Dx);
@@ -63,40 +71,38 @@ function [grids,filtering,res,par] = NSIter(par,grids,filtering,rhs)
 	dy = kron(Dy,speye(nx+3));
 	dy = filterMat*dy*filterMat';
 	
-	qmesh = grids.q.outer2.xmesh*0;
-	
-	R = 1/par.Re;
+	R = par.Re;
+	psi1 = rhs.q.outer2;
+	I = speye(size(bih));
 	
 	rhsbc = rhs.q.outer2;
-	rhsbc(qOnEinE2) = rhs.q.outer1(filtering.q.outer1.on);
-
-	
+	%rhsbc(qOnEinE2) = rhs.q.outer1(filtering.q.outer1.on);
 	fprintf('\n')
 	lents = 0;
+	Rnq = RN(psi1,R,qdbcEinE2,qdbcE2,filtering.q.outer2.on|qOnEinE2,rhsbc,dx,dy,Lq,grids,filtering);
+	psi1 = bih\Rnq;
+	
 	for k = 1:par.steps
-		Rnq = N(qmesh,R,filtering.q.outer2.on|qOnEinE2,rhsbc,dx,dy,Lq);
-		%add a little noise
-		%Rnq = Rnq + 0.1*~inout.*rand(numel(inout),1);
+		%rhs = rhsbc;
+		Rnq = RN(psi1,R,qdbcEinE2,qdbcE2,filtering.q.outer2.on|qOnEinE2,rhsbc,dx,dy,Lq,grids,filtering);
+		%ivec = grids.q.outer2.yinit(randperm(numel(grids.q.outer2.yinit)));
+		psii = bih\Rnq;
 		
-		qnew = qmesh*0;
-		ivec = grids.q.outer2.yinit(randperm(numel(grids.q.outer2.yinit)));
 % 		for i = 1:numel(ivec)
-% 			ycurr = ivec(i);
-% 			indices = (grids.q.outer2.ymesh==ycurr);
-% 			RnqSlice = Rnq(indices);
-% 			bihSlice = (bih(indices,:))';
-% 			bihSlice = (bihSlice(indices,:))';
+% 			indices = (grids.q.outer2.ymesh==ivec(i));
 % 			
-% 			qnew(indices) = bihSlice\RnqSlice;
+% 			M = I;
+% 			M(indices,:) = bih(indices,:);
+% 			rhs(indices) = Rnq(indices);
+% 			psii = M\rhs;
+% 			rhs(indices) = (1 - par.omega).*psi1(indices) + par.omega.*psii(indices);
 % 			
 % 		end
 
- 		qnew = bih\Rnq;
-		
-		qmesh = (1-par.omega)*qmesh + par.omega*qnew;
+		psi1 = (1 - par.omega).*psi1 + par.omega.*psii;
 		
 		if((k==1 || mod(k,par.plotoniter)==0)&&~par.noplot)
-			res = InPost(qmesh,grids,filtering,par);
+			res = InPost(psi1,grids,filtering,par);
 		end
 		
 		timestr = sprintf('Step: %d/%d',k,par.steps);
@@ -107,9 +113,16 @@ function [grids,filtering,res,par] = NSIter(par,grids,filtering,rhs)
 	
 end
 
-function nq = N(q,R,bc,rhs,dx,dy,Lq)
-	q(bc) = rhs(bc);
-	nq = R*(spdiag(dy*q)*dx*Lq*q-spdiag(dx*q)*dy*Lq*q);
+function nq = RN(q,R,qdbcEinE2,qdbcE2,bc,rhs,dx,dy,Lq,grids,filtering)
+	%q(bc) = rhs(bc);
+	omg = Lq*q;
+	u = dy*q;
+	v = dx*q;
+	u(qdbcEinE2.w|qdbcEinE2.e|qdbcE2.w|qdbcE2.e) = 0;
+	v(qdbcEinE2.s|qdbcEinE2.n|qdbcE2.s|qdbcE2.n) = 0;
+	omg(bc) = 0;
+	
+	nq = R*(spdiag(v)*dy*omg-spdiag(u)*dx*omg);
 	nq(bc) = rhs(bc);
 end
 
